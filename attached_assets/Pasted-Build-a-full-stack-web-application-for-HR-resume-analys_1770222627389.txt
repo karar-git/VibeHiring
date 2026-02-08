@@ -1,0 +1,133 @@
+Build a full-stack web application for HR resume analysis and candidate ranking.
+
+GOAL:
+Create a website where HR users can upload one or multiple CVs (PDF/DOCX or links), optionally provide GitHub or code repository links, and receive AI-driven analysis, charts, rankings, and insights.
+
+CORE FEATURES:
+
+1) CV INPUT
+- Upload:
+  - Single CV
+  - Multiple CVs
+  - Or provide URLs to CV files (public links or folders)
+- Automatically fetch and process CVs from provided sources.
+
+2) CV PARSING & ANALYSIS (Python AI backend)
+- Extract:
+  - Skills
+  - Programming languages
+  - Work experience
+  - Education
+  - Projects
+- Detect most-used programming languages.
+- If GitHub or code repository links are provided:
+  - Fetch public repositories
+  - Analyze languages used
+  - Commit frequency and consistency
+  - Project structure and tooling
+  - Generate a "vibe coding score" based on activity, consistency, and modern practices.
+
+3) AI INSIGHTS & VERIFICATION
+- Generate charts:
+  - Skill distribution
+  - Language usage
+  - Experience timeline
+- Detect potential inconsistencies:
+  - Compare CV claims vs GitHub or code evidence
+  - Flag possible exaggerations or gaps
+  - Never claim certainty — only "potential inconsistencies" with confidence scores.
+
+4) CANDIDATE SCORING (IMPORTANT)
+Support TWO MODES:
+
+MODE A: MANUAL EQUATION
+- HR can define a custom scoring equation:
+  - Skills weight
+  - Experience weight
+  - GitHub / code weight
+  - Education weight
+- Each candidate receives a final numeric score.
+- Rank candidates by score.
+
+MODE B: AI-GENERATED METRIC
+- If no equation is provided:
+  - The AI automatically creates a scoring metric
+  - Adapts to job description and seniority
+- The AI must explain:
+  - Factors used
+  - Why candidates ranked higher or lower
+
+5) MULTI-CV COMPARISON
+- Rank candidates from best to worst.
+- Provide:
+  - AI-generated summary per candidate
+  - Strengths and weaknesses
+  - Reason for ranking position.
+
+6) AUTOMATION
+- Allow linking CV sources (folders or URLs)
+- Periodically re-analyze candidates automatically.
+
+7) PRICING & SUBSCRIPTIONS
+Implement a simple subscription system:
+
+PLANS:
+- Free:
+  - Limited number of CV analyses per month
+  - No GitHub deep analysis
+  - Basic charts only
+
+- Pro:
+  - Higher CV limit
+  - GitHub / code analysis enabled
+  - Vibe coding score
+  - Multi-CV comparison
+  - Custom scoring equations
+
+- Enterprise:
+  - Unlimited CVs
+  - Automated CV source syncing
+  - Advanced AI metrics
+  - Priority processing
+  - Exportable reports (PDF)
+
+REQUIREMENTS:
+- Track usage per user (CV count, analysis runs)
+- Block or limit features when plan limits are reached
+- Show upgrade prompts in UI
+- Pricing values can be placeholders (configurable later)
+
+8) AUTHENTICATION
+- User accounts with login/signup
+- Each user belongs to a subscription plan
+- Persist user data and analysis history
+
+TECH STACK REQUIREMENTS:
+- Frontend: modern but simple UI
+- Backend: Python
+- All AI logic must be in Python
+- Use libraries for:
+  - PDF/DOCX parsing
+  - GitHub API access
+  - Data analysis
+  - Chart generation
+- Database: SQLite (upgradeable later)
+
+AI BEHAVIOR RULES:
+- Explainable decisions
+- No absolute claims about lying
+- Show confidence scores
+- Optimize UX for non-technical HR users
+
+OUTPUT:
+- Working web app
+- Upload interface
+- Analysis dashboard
+- Candidate ranking page
+- Pricing page
+- Subscription logic enforced
+
+IMPORTANT:
+- Clean, maintainable project structure
+- Commented Python code
+- Design for future extensibility
