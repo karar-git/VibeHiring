@@ -3,7 +3,6 @@ import { storage } from "./storage.js";
 import { requireAuth, handleRegister, handleLogin, handleGetMe } from "./auth.js";
 import multer from "multer";
 import fs from "fs";
-import FormData from "form-data";
 
 // AI service URL (separate Railway project)
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:5001";
@@ -62,23 +61,20 @@ export function registerRoutes(app: Express): void {
       let analysis: any = {};
 
       if (file) {
-        // Forward to Python AI service
+        // Forward to Python AI service using native FormData
+        const fileBuffer = fs.readFileSync(file.path);
+        const blob = new Blob([fileBuffer], { type: file.mimetype });
         const formData = new FormData();
-        formData.append("cv", fs.createReadStream(file.path), {
-          filename: file.originalname,
-          contentType: file.mimetype,
-        });
+        formData.append("cv", blob, file.originalname);
+        formData.append("job_description", "General software engineering position");
         if (githubUrl) {
           formData.append("github_url", githubUrl);
         }
-        // Send a default job description since the AI service requires it
-        formData.append("job_description", "General software engineering position");
 
         try {
           const aiResponse = await fetch(`${AI_SERVICE_URL}/analyze`, {
             method: "POST",
-            body: formData as any,
-            headers: formData.getHeaders(),
+            body: formData,
           });
 
           if (!aiResponse.ok) {

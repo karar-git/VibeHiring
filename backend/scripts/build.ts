@@ -7,7 +7,6 @@ const allowlist = [
   "drizzle-orm",
   "drizzle-zod",
   "express",
-  "form-data",
   "jsonwebtoken",
   "multer",
   "pg",
