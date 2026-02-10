@@ -15,6 +15,15 @@ function sanitizeText(text: string): string {
   return text.replace(/\x00/g, "").replace(/[\x01-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 
+// Strip markdown code fences (```json ... ```) that LLMs sometimes wrap around JSON
+function stripMarkdownCodeFences(text: string): string {
+  if (!text) return text;
+  const trimmed = text.trim();
+  // Match ```json\n...\n``` or ```\n...\n```
+  const match = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+  return match ? match[1].trim() : trimmed;
+}
+
 export function registerRoutes(app: Express): void {
   // ─── Auth Routes ───
   app.post("/api/auth/register", handleRegister);
@@ -115,7 +124,8 @@ export function registerRoutes(app: Express): void {
 
     try {
       const file = req.file;
-      const { name, email, githubUrl } = req.body;
+      const { name, email } = req.body;
+      let githubUrl = req.body.githubUrl || null;
       let cvText = "";
       let analysis: any = {};
 
@@ -145,9 +155,16 @@ export function registerRoutes(app: Express): void {
 
           const result = (await aiResponse.json()) as any;
 
+          // Pick up GitHub URL extracted from PDF if user didn't provide one
+          if (!githubUrl && result.github_url) {
+            githubUrl = result.github_url;
+          }
+
           if (result.result) {
             try {
-              const parsed = typeof result.result === "string" ? JSON.parse(result.result) : result.result;
+              const rawResult = typeof result.result === "string" ? result.result : JSON.stringify(result.result);
+              const cleaned = stripMarkdownCodeFences(rawResult);
+              const parsed = JSON.parse(cleaned);
               analysis = {
                 skills: parsed.skills || [],
                 experience: parsed.experience || [],
@@ -201,10 +218,8 @@ export function registerRoutes(app: Express): void {
 
       await storage.incrementCvCount(userId);
 
-      // Cleanup uploaded file
-      if (file) {
-        try { fs.unlinkSync(file.path); } catch {}
-      }
+      // Keep uploaded file for "View Original Resume" feature
+      // (files persist until the next deploy on Railway)
 
       res.status(201).json(newCandidate);
     } catch (error) {

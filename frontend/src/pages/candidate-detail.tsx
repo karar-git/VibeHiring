@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 export default function CandidateDetailPage() {
   const [, params] = useRoute("/candidates/:id");
   const id = parseInt(params?.id || "0");
@@ -101,7 +103,19 @@ export default function CandidateDetailPage() {
                 </Button>
               </a>
             )}
-            <Button>Contact Candidate</Button>
+            {candidate.email ? (
+              <a href={`mailto:${candidate.email}`}>
+                <Button>
+                  <Mail className="mr-2 size-4" />
+                  Contact Candidate
+                </Button>
+              </a>
+            ) : (
+              <Button disabled title="No email available">
+                <Mail className="mr-2 size-4" />
+                Contact Candidate
+              </Button>
+            )}
             <Button 
               variant="destructive" 
               size="icon" 
@@ -291,7 +305,7 @@ export default function CandidateDetailPage() {
             <Card className="border-border/60 shadow-sm">
               <CardContent className="pt-6">
                 <Button variant="outline" className="w-full" asChild>
-                  <a href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={`${API_BASE}${candidate.resumeUrl}`} target="_blank" rel="noopener noreferrer">
                     <FileText className="mr-2 h-4 w-4" />
                     View Original Resume
                   </a>

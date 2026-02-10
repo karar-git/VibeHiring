@@ -27,6 +27,35 @@ class DocumentTextExtractor:
         return text
 
     @staticmethod
+    def _extract_links_from_pdf(file):
+        """Extract all hyperlink URLs from a PDF document."""
+        urls = []
+        for page_num in range(len(file)):
+            page = file.load_page(page_num)
+            links = page.get_links()
+            for link in links:
+                uri = link.get("uri", "")
+                if uri and uri.startswith("http"):
+                    urls.append(uri)
+        return urls
+
+    @staticmethod
+    def _find_github_url(urls):
+        """Find a GitHub profile URL from a list of URLs."""
+        import re
+
+        for url in urls:
+            # Match github.com/username (not github.com/username/repo or other paths beyond profile)
+            match = re.match(r"https?://(?:www\.)?github\.com/([a-zA-Z0-9_-]+)/?$", url)
+            if match:
+                return url
+        # Fallback: any github.com URL (repo links etc.)
+        for url in urls:
+            if "github.com" in url:
+                return url
+        return None
+
+    @staticmethod
     def _extract_text_from_docx(file):
         text = ""
         doc = docx.Document(file)
@@ -42,6 +71,7 @@ class DocumentTextExtractor:
 
     @staticmethod
     def extract(file):
+        """Extract text from a document file. Returns (text, github_url) tuple."""
         # Use filename attribute (Flask's FileStorage) with fallback to name
         filename = getattr(file, "filename", None) or getattr(file, "name", "") or ""
         filename = filename.lower()
@@ -49,16 +79,22 @@ class DocumentTextExtractor:
         # Also check content type as fallback
         content_type = getattr(file, "content_type", "") or ""
 
+        github_url = None
+
         if filename.endswith(".pdf") or "pdf" in content_type:
             pdf_file = fitz.open(stream=file.read(), filetype="pdf")
-            return DocumentTextExtractor._extract_text_from_pdf(pdf_file)
+            text = DocumentTextExtractor._extract_text_from_pdf(pdf_file)
+            # Extract hyperlink URLs from PDF annotations
+            links = DocumentTextExtractor._extract_links_from_pdf(pdf_file)
+            github_url = DocumentTextExtractor._find_github_url(links)
+            return text, github_url
         elif filename.endswith(".docx") or "wordprocessingml" in content_type:
-            return DocumentTextExtractor._extract_text_from_docx(file)
+            return DocumentTextExtractor._extract_text_from_docx(file), None
         elif (
             filename.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif"))
             or "image" in content_type
         ):
-            return DocumentTextExtractor._extract_text_from_image(file)
+            return DocumentTextExtractor._extract_text_from_image(file), None
         else:
             raise ValueError(
                 f"Unsupported file format: filename='{filename}', content_type='{content_type}'"

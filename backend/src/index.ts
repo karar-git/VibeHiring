@@ -1,10 +1,18 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
+import path from "path";
+import fs from "fs";
 import { registerRoutes } from "./routes.js";
 import { createServer } from "http";
 import { pool } from "./db.js";
 
 const app = express();
+
+// Ensure uploads directory exists
+const uploadsDir = path.resolve("uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Run DB migrations at startup (creates tables if they don't exist)
 async function runMigrations() {
@@ -88,6 +96,9 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Serve uploaded resume files
+app.use("/uploads", express.static(path.resolve("uploads")));
 
 // Request logging
 function log(message: string, source = "express") {

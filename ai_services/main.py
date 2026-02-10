@@ -22,16 +22,35 @@ def analyze_resume():
         if not cv_file:
             return jsonify({"error": "CV file is required"}), 400
 
-        # Extract text from CV file
-        cv_text = DocumentTextExtractor.extract(cv_file)
+        # Extract text (and possible GitHub URL) from CV file
+        extraction_result = DocumentTextExtractor.extract(cv_file)
+        if isinstance(extraction_result, tuple):
+            cv_text, pdf_github_url = extraction_result
+        else:
+            cv_text = extraction_result
+            pdf_github_url = None
+
         if not cv_text.strip():
             return jsonify({"error": "Could not extract text from CV file"}), 400
+
+        # Use GitHub URL from form data if provided, otherwise use one extracted from PDF
+        github_url = request.form.get("github_url") or pdf_github_url
+
+        # If we found a GitHub URL from the PDF, append it to cv_text so the AI can see it
+        if github_url and github_url not in cv_text:
+            cv_text += f"\n\nGitHub Profile: {github_url}"
 
         # Initialize analyzer and run analysis
         analyzer_instance = Analyzer(cv_text, job_description)
         result = analyzer_instance.analyze()
 
-        return jsonify({"result": result, "cv_text": cv_text}), 200
+        return jsonify(
+            {
+                "result": result,
+                "cv_text": cv_text,
+                "github_url": pdf_github_url,
+            }
+        ), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
