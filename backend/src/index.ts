@@ -2,8 +2,61 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes.js";
 import { createServer } from "http";
+import { pool } from "./db.js";
 
 const app = express();
+
+// Run DB migrations at startup (creates tables if they don't exist)
+async function runMigrations() {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "users" (
+        "id" varchar PRIMARY KEY,
+        "email" varchar NOT NULL UNIQUE,
+        "password_hash" varchar NOT NULL,
+        "first_name" varchar,
+        "last_name" varchar,
+        "profile_image_url" varchar,
+        "created_at" timestamp DEFAULT now(),
+        "updated_at" timestamp DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS "candidates" (
+        "id" serial PRIMARY KEY,
+        "name" text NOT NULL,
+        "email" text,
+        "resume_url" text NOT NULL,
+        "github_url" text,
+        "cv_text" text,
+        "skills" jsonb,
+        "experience" jsonb,
+        "education" jsonb,
+        "projects" jsonb,
+        "score" integer,
+        "vibe_coding_score" integer,
+        "analysis_summary" text,
+        "rank_reason" text,
+        "created_at" timestamp DEFAULT now(),
+        "user_id" varchar REFERENCES "users"("id")
+      );
+
+      CREATE TABLE IF NOT EXISTS "user_subscriptions" (
+        "id" serial PRIMARY KEY,
+        "user_id" varchar NOT NULL UNIQUE REFERENCES "users"("id"),
+        "plan" text NOT NULL DEFAULT 'free',
+        "cv_count" integer DEFAULT 0,
+        "last_reset" timestamp DEFAULT now()
+      );
+    `);
+    console.log("Database tables verified/created successfully");
+  } catch (err) {
+    console.error("Migration error:", err);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 // CORS - allow frontend origin
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -77,7 +130,14 @@ app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
 const port = parseInt(process.env.PORT || "5000", 10);
 const httpServer = createServer(app);
 
-httpServer.listen({ port, host: "0.0.0.0" }, () => {
-  log(`API server running on port ${port}`);
-  log(`CORS enabled for: ${FRONTEND_URL}`);
-});
+runMigrations()
+  .then(() => {
+    httpServer.listen({ port, host: "0.0.0.0" }, () => {
+      log(`API server running on port ${port}`);
+      log(`CORS enabled for: ${FRONTEND_URL}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to run migrations, exiting:", err);
+    process.exit(1);
+  });
