@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [build.nixpacks]
 install_cmd = "npm ci"
-build_cmd = "npm run build"
+build_cmd = "npm run build && npx drizzle-kit push"
 
 [deploy]
 startCommand = "npm run start"
