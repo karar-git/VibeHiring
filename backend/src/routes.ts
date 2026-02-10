@@ -82,7 +82,9 @@ export function registerRoutes(app: Express): void {
           });
 
           if (!aiResponse.ok) {
-            throw new Error(`AI service error: ${aiResponse.status}`);
+            const errBody = await aiResponse.text();
+            console.error(`AI service returned ${aiResponse.status}:`, errBody);
+            throw new Error(`AI service error: ${aiResponse.status} - ${errBody}`);
           }
 
           const result = (await aiResponse.json()) as any;
@@ -119,11 +121,7 @@ export function registerRoutes(app: Express): void {
           cvText = sanitizeText(result.cv_text || "");
         } catch (e) {
           console.error("Error calling AI service:", e);
-          try {
-            cvText = sanitizeText(fs.readFileSync(file.path, "utf-8"));
-          } catch {
-            cvText = "Could not parse file content.";
-          }
+          cvText = "Could not extract text - AI service unavailable.";
           analysis = {
             skills: [],
             experience: [],
