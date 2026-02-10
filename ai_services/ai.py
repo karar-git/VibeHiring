@@ -42,16 +42,27 @@ class DocumentTextExtractor:
 
     @staticmethod
     def extract(file):
-        filename = file.name.lower()
-        if filename.endswith(".pdf"):
+        # Use filename attribute (Flask's FileStorage) with fallback to name
+        filename = getattr(file, "filename", None) or getattr(file, "name", "") or ""
+        filename = filename.lower()
+
+        # Also check content type as fallback
+        content_type = getattr(file, "content_type", "") or ""
+
+        if filename.endswith(".pdf") or "pdf" in content_type:
             pdf_file = fitz.open(stream=file.read(), filetype="pdf")
             return DocumentTextExtractor._extract_text_from_pdf(pdf_file)
-        elif filename.endswith(".docx"):
+        elif filename.endswith(".docx") or "wordprocessingml" in content_type:
             return DocumentTextExtractor._extract_text_from_docx(file)
-        elif filename.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif")):
+        elif (
+            filename.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif"))
+            or "image" in content_type
+        ):
             return DocumentTextExtractor._extract_text_from_image(file)
         else:
-            raise ValueError("Unsupported file format")
+            raise ValueError(
+                f"Unsupported file format: filename='{filename}', content_type='{content_type}'"
+            )
 
 
 class Analyzer:
