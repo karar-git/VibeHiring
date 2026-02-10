@@ -10,6 +10,14 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:5001";
 
 const upload = multer({ dest: "uploads/" });
 
+// Strip null bytes and invalid UTF-8 sequences that PostgreSQL rejects
+function sanitizeText(text: string): string {
+  if (!text) return text;
+  // Remove null bytes (\x00) which PG cannot store
+  // Remove other control chars except newline/tab/carriage return
+  return text.replace(/\x00/g, "").replace(/[\x01-\x08\x0B\x0C\x0E-\x1F]/g, "");
+}
+
 export function registerRoutes(app: Express): void {
   // ─── Auth Routes ───
   app.post("/api/auth/register", handleRegister);
@@ -91,8 +99,8 @@ export function registerRoutes(app: Express): void {
                 projects: parsed.projects || [],
                 score: parsed.matching_score || parsed.score || 0,
                 vibeCodingScore: parsed.vibe_coding_score || 0,
-                analysisSummary: parsed.summary || parsed.overall_fit || result.result,
-                rankReason: parsed.rank_reason || "",
+                analysisSummary: sanitizeText(parsed.summary || parsed.overall_fit || String(result.result)),
+                rankReason: sanitizeText(parsed.rank_reason || ""),
               };
             } catch {
               // If it's a plain text response
@@ -103,16 +111,16 @@ export function registerRoutes(app: Express): void {
                 projects: [],
                 score: 50,
                 vibeCodingScore: 0,
-                analysisSummary: String(result.result),
+                analysisSummary: sanitizeText(String(result.result)),
                 rankReason: "AI provided text summary",
               };
             }
           }
-          cvText = result.cv_text || "";
+          cvText = sanitizeText(result.cv_text || "");
         } catch (e) {
           console.error("Error calling AI service:", e);
           try {
-            cvText = fs.readFileSync(file.path, "utf-8");
+            cvText = sanitizeText(fs.readFileSync(file.path, "utf-8"));
           } catch {
             cvText = "Could not parse file content.";
           }
