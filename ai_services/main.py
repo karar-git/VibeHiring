@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from ai import analyzer, DocumentTextExtractor
+from ai import Analyzer, DocumentTextExtractor
 import os
 from dotenv import load_dotenv
 
@@ -28,10 +28,10 @@ def analyze_resume():
             return jsonify({"error": "Could not extract text from CV file"}), 400
 
         # Initialize analyzer and run analysis
-        analyzer_instance = analyzer(cv_text, job_description)
-        result = analyzer_instance.analyzie()
+        analyzer_instance = Analyzer(cv_text, job_description)
+        result = analyzer_instance.analyze()
 
-        return jsonify({"result": result}), 200
+        return jsonify({"result": result, "cv_text": cv_text}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -43,4 +43,4 @@ def health_check():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5001)), debug=False)

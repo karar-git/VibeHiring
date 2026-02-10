@@ -1,1 +1,0 @@
-export { registerImageRoutes } from "./routes";

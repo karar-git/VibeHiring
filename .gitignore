@@ -1,6 +1,26 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
 .DS_Store
-server/public
-vite.config.ts.*
+Thumbs.db
+
+# Uploads (runtime)
+uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
 *.tar.gz
+*.log
