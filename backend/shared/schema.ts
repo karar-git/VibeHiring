@@ -1,10 +1,11 @@
 import { jsonb, pgTable, text, serial, integer, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 // Users Table (email/password auth)
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: varchar("id").primaryKey().$defaultFn(() => randomUUID()),
   email: varchar("email").notNull().unique(),
   passwordHash: varchar("password_hash").notNull(),
   firstName: varchar("first_name"),
