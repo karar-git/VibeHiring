@@ -2,6 +2,7 @@
 builder = "nixpacks"
 
 [build.nixpacks]
+apt_pkgs = ["tesseract-ocr"]
 install_cmd = "pip install -r requirements.txt"
 
 [deploy]
