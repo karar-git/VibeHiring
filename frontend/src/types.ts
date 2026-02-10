@@ -9,6 +9,24 @@ export interface User {
   createdAt: string;
 }
 
+export interface Job {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  userId: string | null;
+  candidateCount?: number;
+}
+
+export interface JobStats {
+  totalJobs: number;
+  openJobs: number;
+  totalCandidates: number;
+  avgScore: number;
+}
+
 export interface Candidate {
   id: number;
   name: string;
@@ -26,6 +44,7 @@ export interface Candidate {
   rankReason: string | null;
   createdAt: string | null;
   userId: string | null;
+  jobId: number | null;
 }
 
 export interface UserSubscription {

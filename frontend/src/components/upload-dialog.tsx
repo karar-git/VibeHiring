@@ -15,20 +15,24 @@ import { Label } from "@/components/ui/label";
 import { Upload, Loader2, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export function UploadDialog({ trigger }: { trigger?: React.ReactNode }) {
+interface UploadDialogProps {
+  jobId: number;
+  trigger?: React.ReactNode;
+}
+
+export function UploadDialog({ jobId, trigger }: UploadDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
-  const { mutate: createCandidate, isPending } = useCreateCandidate();
+  const { mutate: createCandidate, isPending } = useCreateCandidate(jobId);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
-      // Auto-fill name if empty (remove extension)
       if (!name) {
         setName(selectedFile.name.replace(/\.[^/.]+$/, ""));
       }
@@ -54,7 +58,7 @@ export function UploadDialog({ trigger }: { trigger?: React.ReactNode }) {
         setGithubUrl("");
         toast({
           title: "Candidate added",
-          description: "Resume uploaded and analysis started.",
+          description: "Resume uploaded and AI analysis started against the job description.",
         });
       },
       onError: (error) => {
@@ -73,15 +77,15 @@ export function UploadDialog({ trigger }: { trigger?: React.ReactNode }) {
         {trigger || (
           <Button className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">
             <Upload className="size-4" />
-            Upload Resume
+            Upload CV
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] rounded-2xl border-border/60 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">Add Candidate</DialogTitle>
+          <DialogTitle className="font-display text-xl">Upload Candidate CV</DialogTitle>
           <DialogDescription>
-            Upload a resume (PDF/DOCX) to start AI analysis.
+            Upload a resume (PDF/DOCX). The AI will analyze it against the job description.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">

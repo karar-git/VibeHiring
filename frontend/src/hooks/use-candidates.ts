@@ -2,16 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type { Candidate } from "@/types";
 
-const CANDIDATES_KEY = ["/api/candidates"];
-
-export function useCandidates() {
+export function useCandidatesByJob(jobId: number) {
   return useQuery<Candidate[]>({
-    queryKey: CANDIDATES_KEY,
+    queryKey: ["/api/jobs", jobId, "candidates"],
     queryFn: async () => {
-      const res = await apiFetch("/api/candidates");
+      const res = await apiFetch(`/api/jobs/${jobId}/candidates`);
       if (!res.ok) throw new Error("Failed to fetch candidates");
       return res.json();
     },
+    enabled: jobId > 0,
   });
 }
 
@@ -27,11 +26,11 @@ export function useCandidate(id: number) {
   });
 }
 
-export function useCreateCandidate() {
+export function useCreateCandidate(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await apiFetch("/api/candidates", {
+      const res = await apiFetch(`/api/jobs/${jobId}/candidates`, {
         method: "POST",
         body: formData,
       });
@@ -45,17 +44,27 @@ export function useCreateCandidate() {
 
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CANDIDATES_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs", jobId, "candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/stats"] });
+    },
   });
 }
 
-export function useDeleteCandidate() {
+export function useDeleteCandidate(jobId?: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await apiFetch(`/api/candidates/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete candidate");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CANDIDATES_KEY }),
+    onSuccess: () => {
+      if (jobId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/jobs", jobId, "candidates"] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/stats"] });
+    },
   });
 }

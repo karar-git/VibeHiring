@@ -1,6 +1,6 @@
-import { candidates, userSubscriptions, users, type InsertCandidate, type UserSubscription, type User } from "../shared/schema.js";
+import { candidates, jobs, userSubscriptions, users, type User } from "../shared/schema.js";
 import { db } from "./db.js";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count, avg } from "drizzle-orm";
 
 export class DatabaseStorage {
   // Auth
@@ -24,7 +24,61 @@ export class DatabaseStorage {
     return user;
   }
 
-  // Candidates
+  // Jobs
+  async createJob(job: any) {
+    const [newJob] = await db.insert(jobs).values(job).returning();
+    return newJob;
+  }
+
+  async getJob(id: number) {
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, id));
+    return job;
+  }
+
+  async listJobs(userId: string) {
+    return db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.userId, userId))
+      .orderBy(desc(jobs.createdAt));
+  }
+
+  async updateJob(id: number, data: { title?: string; description?: string; status?: string }) {
+    const [updated] = await db
+      .update(jobs)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(jobs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteJob(id: number) {
+    // Delete all candidates for this job first
+    await db.delete(candidates).where(eq(candidates.jobId, id));
+    await db.delete(jobs).where(eq(jobs.id, id));
+  }
+
+  async getJobStats(userId: string) {
+    const jobsList = await this.listJobs(userId);
+    const totalJobs = jobsList.length;
+    const openJobs = jobsList.filter(j => j.status === "open").length;
+
+    const candidateRows = await db
+      .select({ count: count() })
+      .from(candidates)
+      .where(eq(candidates.userId, userId));
+    const totalCandidates = candidateRows[0]?.count || 0;
+
+    const avgRows = await db
+      .select({ avg: avg(candidates.score) })
+      .from(candidates)
+      .where(eq(candidates.userId, userId));
+    const avgScore = Math.round(Number(avgRows[0]?.avg) || 0);
+
+    return { totalJobs, openJobs, totalCandidates, avgScore };
+  }
+
+  // Candidates (scoped to a job)
   async createCandidate(candidate: any) {
     const [newCandidate] = await db.insert(candidates).values(candidate).returning();
     return newCandidate;
@@ -41,6 +95,22 @@ export class DatabaseStorage {
       .from(candidates)
       .where(eq(candidates.userId, userId))
       .orderBy(desc(candidates.score));
+  }
+
+  async listCandidatesByJob(jobId: number) {
+    return db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.jobId, jobId))
+      .orderBy(desc(candidates.score));
+  }
+
+  async getCandidateCountByJob(jobId: number) {
+    const rows = await db
+      .select({ count: count() })
+      .from(candidates)
+      .where(eq(candidates.jobId, jobId));
+    return rows[0]?.count || 0;
   }
 
   async deleteCandidate(id: number) {

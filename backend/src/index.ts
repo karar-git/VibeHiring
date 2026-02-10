@@ -22,6 +22,16 @@ async function runMigrations() {
         "updated_at" timestamp DEFAULT now()
       );
 
+      CREATE TABLE IF NOT EXISTS "jobs" (
+        "id" serial PRIMARY KEY,
+        "title" text NOT NULL,
+        "description" text NOT NULL,
+        "status" text NOT NULL DEFAULT 'open',
+        "created_at" timestamp DEFAULT now(),
+        "updated_at" timestamp DEFAULT now(),
+        "user_id" varchar REFERENCES "users"("id")
+      );
+
       CREATE TABLE IF NOT EXISTS "candidates" (
         "id" serial PRIMARY KEY,
         "name" text NOT NULL,
@@ -38,7 +48,8 @@ async function runMigrations() {
         "analysis_summary" text,
         "rank_reason" text,
         "created_at" timestamp DEFAULT now(),
-        "user_id" varchar REFERENCES "users"("id")
+        "user_id" varchar REFERENCES "users"("id"),
+        "job_id" integer REFERENCES "jobs"("id")
       );
 
       CREATE TABLE IF NOT EXISTS "user_subscriptions" (
@@ -48,6 +59,11 @@ async function runMigrations() {
         "cv_count" integer DEFAULT 0,
         "last_reset" timestamp DEFAULT now()
       );
+    `);
+    // Add new columns to existing tables (safe to run multiple times)
+    await client.query(`
+      ALTER TABLE "candidates" ADD COLUMN IF NOT EXISTS "job_id" integer REFERENCES "jobs"("id");
+      ALTER TABLE "candidates" DROP COLUMN IF EXISTS "job_description";
     `);
     console.log("Database tables verified/created successfully");
   } catch (err) {

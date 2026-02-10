@@ -1,19 +1,40 @@
-import { useCandidate } from "@/hooks/use-candidates";
+import { useCandidate, useDeleteCandidate } from "@/hooks/use-candidates";
+import { useJob } from "@/hooks/use-jobs";
 import { Layout } from "@/components/layout";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ArrowLeft, Github, Linkedin, Mail, Calendar, Briefcase, GraduationCap, FileText } from "lucide-react";
+import { Loader2, ArrowLeft, Github, Linkedin, Mail, Calendar, Briefcase, GraduationCap, FileText, Trash2, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CandidateDetailPage() {
   const [, params] = useRoute("/candidates/:id");
   const id = parseInt(params?.id || "0");
   const { data: candidate, isLoading } = useCandidate(id);
+  const { data: job } = useJob(candidate?.jobId || 0);
+  const { mutate: deleteCandidate, isPending: isDeleting } = useDeleteCandidate(candidate?.jobId ?? undefined);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+
+  const backPath = candidate?.jobId ? `/jobs/${candidate.jobId}` : "/jobs";
+
+  const handleDelete = () => {
+    if (!confirm("Are you sure you want to delete this candidate?")) return;
+    deleteCandidate(id, {
+      onSuccess: () => {
+        toast({ title: "Candidate deleted", description: "The candidate has been removed." });
+        navigate(backPath);
+      },
+      onError: (error) => {
+        toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -30,8 +51,8 @@ export default function CandidateDetailPage() {
       <Layout>
         <div className="text-center py-20">
           <h1 className="text-2xl font-bold">Candidate Not Found</h1>
-          <Link href="/candidates">
-            <Button className="mt-4">Back to List</Button>
+          <Link href="/jobs">
+            <Button className="mt-4">Back to Jobs</Button>
           </Link>
         </div>
       </Layout>
@@ -52,7 +73,7 @@ export default function CandidateDetailPage() {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Link href="/candidates">
+          <Link href={backPath}>
             <Button variant="ghost" size="icon" className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -81,6 +102,15 @@ export default function CandidateDetailPage() {
               </a>
             )}
             <Button>Contact Candidate</Button>
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="rounded-full" 
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            </Button>
           </div>
         </div>
 
@@ -106,6 +136,22 @@ export default function CandidateDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Job Description */}
+            {job && (
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-display flex items-center gap-2">
+                    <ClipboardList className="size-5 text-muted-foreground" /> Job: {job.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {job.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Experience */}
             <Card className="border-border/60 shadow-sm">

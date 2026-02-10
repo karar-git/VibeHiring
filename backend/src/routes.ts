@@ -12,8 +12,6 @@ const upload = multer({ dest: "uploads/" });
 // Strip null bytes and invalid UTF-8 sequences that PostgreSQL rejects
 function sanitizeText(text: string): string {
   if (!text) return text;
-  // Remove null bytes (\x00) which PG cannot store
-  // Remove other control chars except newline/tab/carriage return
   return text.replace(/\x00/g, "").replace(/[\x01-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 
@@ -33,21 +31,82 @@ export function registerRoutes(app: Express): void {
     return (sub.cvCount || 0) < limit;
   };
 
-  // ─── Candidates API ───
-  app.get("/api/candidates", requireAuth, async (req, res) => {
+  // ─── Jobs API ───
+  app.get("/api/jobs", requireAuth, async (req, res) => {
     const userId = req.userId!;
-    const list = await storage.listCandidates(userId);
+    const jobsList = await storage.listJobs(userId);
+
+    // Attach candidate count to each job
+    const jobsWithCounts = await Promise.all(
+      jobsList.map(async (job) => {
+        const candidateCount = await storage.getCandidateCountByJob(job.id);
+        return { ...job, candidateCount };
+      })
+    );
+
+    res.json(jobsWithCounts);
+  });
+
+  app.get("/api/jobs/stats", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const stats = await storage.getJobStats(userId);
+    res.json(stats);
+  });
+
+  app.get("/api/jobs/:id", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.id));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+    const candidateCount = await storage.getCandidateCountByJob(job.id);
+    res.json({ ...job, candidateCount });
+  });
+
+  app.post("/api/jobs", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const { title, description } = req.body;
+    if (!title || !description) {
+      return res.status(400).json({ message: "Title and description are required" });
+    }
+    const newJob = await storage.createJob({ title, description, userId });
+    res.status(201).json(newJob);
+  });
+
+  app.patch("/api/jobs/:id", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.id));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const { title, description, status } = req.body;
+    const updated = await storage.updateJob(job.id, { title, description, status });
+    res.json(updated);
+  });
+
+  app.delete("/api/jobs/:id", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.id));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    await storage.deleteJob(job.id);
+    res.status(204).send();
+  });
+
+  // ─── Candidates API (scoped to jobs) ───
+  app.get("/api/jobs/:jobId/candidates", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.jobId));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const list = await storage.listCandidatesByJob(job.id);
     res.json(list);
   });
 
-  app.get("/api/candidates/:id", requireAuth, async (req, res) => {
-    const candidate = await storage.getCandidate(Number(req.params.id));
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
-    res.json(candidate);
-  });
-
-  app.post("/api/candidates", requireAuth, upload.single("resumeFile"), async (req, res) => {
+  app.post("/api/jobs/:jobId/candidates", requireAuth, upload.single("resumeFile"), async (req, res) => {
     const userId = req.userId!;
+    const jobId = Number(req.params.jobId);
+
+    const job = await storage.getJob(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== userId) return res.status(403).json({ message: "Forbidden" });
 
     const canUpload = await checkLimits(userId);
     if (!canUpload) {
@@ -66,7 +125,8 @@ export function registerRoutes(app: Express): void {
         const blob = new Blob([fileBuffer], { type: file.mimetype });
         const formData = new FormData();
         formData.append("cv", blob, file.originalname);
-        formData.append("job_description", "General software engineering position");
+        // Use the job's description for AI analysis
+        formData.append("job_description", job.description);
         if (githubUrl) {
           formData.append("github_url", githubUrl);
         }
@@ -84,10 +144,8 @@ export function registerRoutes(app: Express): void {
           }
 
           const result = (await aiResponse.json()) as any;
-          
-          // Parse the AI result - it returns { result: "..." } with a text summary
+
           if (result.result) {
-            // Try to extract structured data from AI response
             try {
               const parsed = typeof result.result === "string" ? JSON.parse(result.result) : result.result;
               analysis = {
@@ -101,7 +159,6 @@ export function registerRoutes(app: Express): void {
                 rankReason: sanitizeText(parsed.rank_reason || ""),
               };
             } catch {
-              // If it's a plain text response
               analysis = {
                 skills: [],
                 experience: [],
@@ -138,6 +195,7 @@ export function registerRoutes(app: Express): void {
         githubUrl: githubUrl || null,
         cvText,
         userId,
+        jobId,
         ...analysis,
       });
 
@@ -153,6 +211,19 @@ export function registerRoutes(app: Express): void {
       console.error("Error processing candidate:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
+  });
+
+  // Keep legacy endpoint for backward compat & direct candidate access
+  app.get("/api/candidates", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const list = await storage.listCandidates(userId);
+    res.json(list);
+  });
+
+  app.get("/api/candidates/:id", requireAuth, async (req, res) => {
+    const candidate = await storage.getCandidate(Number(req.params.id));
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    res.json(candidate);
   });
 
   app.delete("/api/candidates/:id", requireAuth, async (req, res) => {

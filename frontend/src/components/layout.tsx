@@ -7,7 +7,8 @@ import {
   Settings, 
   LogOut, 
   Menu,
-  X
+  X,
+  Briefcase
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export function Layout({ children }: LayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Candidates", href: "/candidates", icon: Users },
+    { name: "Jobs", href: "/jobs", icon: Briefcase },
     { name: "Subscription", href: "/subscription", icon: CreditCard },
   ];
 

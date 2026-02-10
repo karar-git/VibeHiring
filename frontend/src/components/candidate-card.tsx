@@ -109,9 +109,19 @@ export function CandidateCard({ candidate, onDelete }: CandidateCardProps) {
       </CardContent>
 
       <CardFooter className="p-3 bg-muted/20 border-t border-border/40 flex justify-between items-center">
-        <span className="text-[10px] text-muted-foreground font-medium">
-          Added {format(new Date(candidate.createdAt || new Date()), 'MMM d, yyyy')}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground font-medium">
+            Added {format(new Date(candidate.createdAt || new Date()), 'MMM d, yyyy')}
+          </span>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={(e) => { e.preventDefault(); onDelete(candidate.id); }}
+          >
+            <Trash2 className="size-3" />
+          </Button>
+        </div>
         <Link href={`/candidates/${candidate.id}`}>
           <Button size="sm" variant="ghost" className="h-7 text-xs hover:text-primary hover:bg-primary/10">
             Analyze

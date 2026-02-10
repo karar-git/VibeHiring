@@ -7,7 +7,8 @@ import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import DashboardPage from "@/pages/dashboard";
-import CandidatesPage from "@/pages/candidates";
+import JobsPage from "@/pages/jobs";
+import JobDetailPage from "@/pages/job-detail";
 import CandidateDetailPage from "@/pages/candidate-detail";
 import SubscriptionPage from "@/pages/subscription";
 import NotFound from "@/pages/not-found";
@@ -44,8 +45,11 @@ function Router() {
       <Route path="/dashboard">
         <ProtectedRoute component={DashboardPage} />
       </Route>
-      <Route path="/candidates">
-        <ProtectedRoute component={CandidatesPage} />
+      <Route path="/jobs">
+        <ProtectedRoute component={JobsPage} />
+      </Route>
+      <Route path="/jobs/:id">
+        <ProtectedRoute component={JobDetailPage} />
       </Route>
       <Route path="/candidates/:id">
         <ProtectedRoute component={CandidateDetailPage} />

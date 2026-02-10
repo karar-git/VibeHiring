@@ -15,7 +15,18 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Candidates Table
+// Jobs Table (job offers with descriptions)
+export const jobs = pgTable("jobs", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("open"), // open, closed, archived
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  userId: varchar("user_id").references(() => users.id),
+});
+
+// Candidates Table (CVs uploaded to a specific job)
 export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -30,7 +41,7 @@ export const candidates = pgTable("candidates", {
   education: jsonb("education").$type<any[]>(),
   projects: jsonb("projects").$type<any[]>(),
 
-  // Scoring & Ranking
+  // Scoring & Ranking (relative to the job description)
   score: integer("score"),
   vibeCodingScore: integer("vibe_coding_score"),
   analysisSummary: text("analysis_summary"),
@@ -38,6 +49,7 @@ export const candidates = pgTable("candidates", {
 
   createdAt: timestamp("created_at").defaultNow(),
   userId: varchar("user_id").references(() => users.id),
+  jobId: integer("job_id").references(() => jobs.id),
 });
 
 // User Subscription / Usage Tracking
@@ -50,6 +62,12 @@ export const userSubscriptions = pgTable("user_subscriptions", {
 });
 
 // Zod Schemas
+export const insertJobSchema = createInsertSchema(jobs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCandidateSchema = createInsertSchema(candidates).omit({
   id: true,
   createdAt: true,
@@ -83,6 +101,8 @@ export const loginSchema = z.object({
 
 // Types
 export type User = typeof users.$inferSelect;
+export type Job = typeof jobs.$inferSelect;
+export type InsertJob = z.infer<typeof insertJobSchema>;
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
