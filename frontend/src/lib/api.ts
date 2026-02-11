@@ -1,7 +1,7 @@
 // Central API helper with JWT token management
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
-const TOKEN_KEY = "recruitai_token";
+const TOKEN_KEY = "vibehiring_token";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

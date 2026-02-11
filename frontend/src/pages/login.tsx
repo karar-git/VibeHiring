@@ -33,9 +33,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/25">
-            <span className="text-white font-bold text-xl font-display">HR</span>
+            <span className="text-white font-bold text-xl font-display">VH</span>
           </div>
-          <span className="font-display font-bold text-2xl tracking-tight">RecruitAI</span>
+          <span className="font-display font-bold text-2xl tracking-tight">VibeHiring</span>
         </div>
 
         <Card className="border-border/60 shadow-lg">

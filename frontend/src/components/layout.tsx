@@ -35,10 +35,10 @@ export function Layout({ children }: LayoutProps) {
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-6 py-8">
         <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/25">
-          <span className="text-white font-bold text-xl font-display">HR</span>
+          <span className="text-white font-bold text-xl font-display">VH</span>
         </div>
         <div>
-          <h1 className="font-display font-bold text-lg tracking-tight">RecruitAI</h1>
+          <h1 className="font-display font-bold text-lg tracking-tight">VibeHiring</h1>
           <p className="text-xs text-muted-foreground font-medium">Smart Hiring</p>
         </div>
       </div>
@@ -111,9 +111,9 @@ export function Layout({ children }: LayoutProps) {
         <header className="h-16 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center px-6 lg:hidden justify-between">
           <div className="flex items-center gap-2">
              <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm font-display">HR</span>
+              <span className="text-white font-bold text-sm font-display">VH</span>
             </div>
-            <span className="font-display font-bold text-lg">RecruitAI</span>
+            <span className="font-display font-bold text-lg">VibeHiring</span>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
             <Menu className="size-5" />

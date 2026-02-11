@@ -25,9 +25,9 @@ export default function LandingPage() {
       <header className="px-6 h-20 flex items-center justify-between max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-2">
           <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm font-display">HR</span>
+            <span className="text-white font-bold text-sm font-display">VH</span>
           </div>
-          <span className="font-display font-bold text-xl tracking-tight">RecruitAI</span>
+          <span className="font-display font-bold text-xl tracking-tight">VibeHiring</span>
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <a href="#features" className="hover:text-primary transition-colors">Features</a>
@@ -199,12 +199,12 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center gap-2 mb-4 md:mb-0">
             <div className="size-6 rounded bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-xs">HR</span>
+              <span className="text-white font-bold text-xs">VH</span>
             </div>
-            <span className="font-bold font-display">RecruitAI</span>
+            <span className="font-bold font-display">VibeHiring</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            © 2024 RecruitAI. All rights reserved.
+            © 2024 VibeHiring. All rights reserved.
           </div>
         </div>
       </footer>
