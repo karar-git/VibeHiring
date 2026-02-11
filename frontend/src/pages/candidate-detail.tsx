@@ -61,15 +61,24 @@ export default function CandidateDetailPage() {
     );
   }
 
-  // Dummy chart data - in a real app, this would come from the AI analysis
-  const chartData = [
-    { subject: 'Technical', A: 85, fullMark: 100 },
-    { subject: 'Experience', A: candidate.score || 60, fullMark: 100 },
-    { subject: 'Education', A: 75, fullMark: 100 },
-    { subject: 'Soft Skills', A: 90, fullMark: 100 },
-    { subject: 'Culture Fit', A: 80, fullMark: 100 },
-    { subject: 'Growth', A: 85, fullMark: 100 },
-  ];
+  const scores = candidate.categoryScores;
+  const chartData = scores
+    ? [
+        { subject: 'Technical', A: scores.technical, fullMark: 100 },
+        { subject: 'Experience', A: scores.experience, fullMark: 100 },
+        { subject: 'Education', A: scores.education, fullMark: 100 },
+        { subject: 'Soft Skills', A: scores.soft_skills, fullMark: 100 },
+        { subject: 'Culture Fit', A: scores.culture_fit, fullMark: 100 },
+        { subject: 'Growth', A: scores.growth, fullMark: 100 },
+      ]
+    : [
+        { subject: 'Technical', A: candidate.score || 50, fullMark: 100 },
+        { subject: 'Experience', A: candidate.score || 50, fullMark: 100 },
+        { subject: 'Education', A: candidate.score || 50, fullMark: 100 },
+        { subject: 'Soft Skills', A: candidate.score || 50, fullMark: 100 },
+        { subject: 'Culture Fit', A: candidate.score || 50, fullMark: 100 },
+        { subject: 'Growth', A: candidate.score || 50, fullMark: 100 },
+      ];
 
   return (
     <Layout>

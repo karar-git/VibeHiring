@@ -2,6 +2,7 @@ import { useJob, useDeleteJob, useUpdateJob } from "@/hooks/use-jobs";
 import { useCandidatesByJob, useDeleteCandidate } from "@/hooks/use-candidates";
 import { Layout } from "@/components/layout";
 import { UploadDialog } from "@/components/upload-dialog";
+import { ImportCsvDialog } from "@/components/import-csv-dialog";
 import { CandidateCard } from "@/components/candidate-card";
 import { Link, useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   Upload,
   Trash2,
   FileText,
+  FileSpreadsheet,
   TrendingUp,
   Award,
 } from "lucide-react";
@@ -120,6 +122,15 @@ export default function JobDetailPage() {
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
+            <ImportCsvDialog
+              jobId={id}
+              trigger={
+                <Button variant="outline" className="gap-2">
+                  <FileSpreadsheet className="size-4" />
+                  Import CSV
+                </Button>
+              }
+            />
             <UploadDialog
               jobId={id}
               trigger={
@@ -210,13 +221,22 @@ export default function JobDetailPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Upload CVs to start evaluating candidates for this position.
               </p>
-              <div className="mt-4">
+              <div className="mt-4 flex gap-2 justify-center">
                 <UploadDialog
                   jobId={id}
                   trigger={
                     <Button variant="outline" className="gap-2">
                       <Upload className="size-4" />
                       Upload First CV
+                    </Button>
+                  }
+                />
+                <ImportCsvDialog
+                  jobId={id}
+                  trigger={
+                    <Button variant="ghost" className="gap-2">
+                      <FileSpreadsheet className="size-4" />
+                      Import CSV
                     </Button>
                   }
                 />

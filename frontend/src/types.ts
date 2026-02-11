@@ -27,6 +27,15 @@ export interface JobStats {
   avgScore: number;
 }
 
+export interface CategoryScores {
+  technical: number;
+  experience: number;
+  education: number;
+  soft_skills: number;
+  culture_fit: number;
+  growth: number;
+}
+
 export interface Candidate {
   id: number;
   name: string;
@@ -40,6 +49,7 @@ export interface Candidate {
   projects: any[] | null;
   score: number | null;
   vibeCodingScore: number | null;
+  categoryScores: CategoryScores | null;
   analysisSummary: string | null;
   rankReason: string | null;
   createdAt: string | null;

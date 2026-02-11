@@ -24,6 +24,67 @@ function stripMarkdownCodeFences(text: string): string {
   return match ? match[1].trim() : trimmed;
 }
 
+// Simple CSV parser that handles quoted fields (including newlines and commas within quotes)
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let current: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          // Escaped quote
+          field += '"';
+          i += 2;
+        } else {
+          // End of quoted field
+          inQuotes = false;
+          i++;
+        }
+      } else {
+        field += ch;
+        i++;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+        i++;
+      } else if (ch === ",") {
+        current.push(field);
+        field = "";
+        i++;
+      } else if (ch === "\r" || ch === "\n") {
+        current.push(field);
+        field = "";
+        rows.push(current);
+        current = [];
+        // Skip \r\n
+        if (ch === "\r" && i + 1 < text.length && text[i + 1] === "\n") {
+          i += 2;
+        } else {
+          i++;
+        }
+      } else {
+        field += ch;
+        i++;
+      }
+    }
+  }
+
+  // Push last field/row
+  if (field || current.length > 0) {
+    current.push(field);
+    rows.push(current);
+  }
+
+  return rows;
+}
+
 export function registerRoutes(app: Express): void {
   // ─── Auth Routes ───
   app.post("/api/auth/register", handleRegister);
@@ -171,7 +232,8 @@ export function registerRoutes(app: Express): void {
                 education: parsed.education || [],
                 projects: parsed.projects || [],
                 score: parsed.matching_score || parsed.score || 0,
-                vibeCodingScore: parsed.vibe_coding_score || 0,
+                vibeCodingScore: parsed.vibe_coding_score ?? 0,
+                categoryScores: parsed.category_scores || null,
                 analysisSummary: sanitizeText(parsed.summary || parsed.overall_fit || String(result.result)),
                 rankReason: sanitizeText(parsed.rank_reason || ""),
               };
@@ -183,6 +245,7 @@ export function registerRoutes(app: Express): void {
                 projects: [],
                 score: 50,
                 vibeCodingScore: 0,
+                categoryScores: null,
                 analysisSummary: sanitizeText(String(result.result)),
                 rankReason: "AI provided text summary",
               };
@@ -199,6 +262,7 @@ export function registerRoutes(app: Express): void {
             projects: [],
             score: 0,
             vibeCodingScore: 0,
+            categoryScores: null,
             analysisSummary: "AI analysis unavailable - the AI service may be starting up. Please try again in a moment.",
             rankReason: "Analysis pending",
           };
@@ -224,6 +288,171 @@ export function registerRoutes(app: Express): void {
       res.status(201).json(newCandidate);
     } catch (error) {
       console.error("Error processing candidate:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // ─── CSV Bulk Import ───
+  app.post("/api/jobs/:jobId/candidates/import-csv", requireAuth, upload.single("csvFile"), async (req, res) => {
+    const userId = req.userId!;
+    const jobId = Number(req.params.jobId);
+
+    const job = await storage.getJob(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: "CSV file is required" });
+
+    try {
+      const csvContent = fs.readFileSync(file.path, "utf-8");
+      // Clean up temp file
+      fs.unlinkSync(file.path);
+
+      // Simple CSV parser: split by newlines, handle quoted fields
+      const rows = parseCSV(csvContent);
+      if (rows.length < 2) {
+        return res.status(400).json({ message: "CSV must have a header row and at least one data row" });
+      }
+
+      const headers = rows[0].map((h: string) => h.trim().toLowerCase().replace(/\s+/g, "_"));
+      const nameIdx = headers.indexOf("name");
+      const emailIdx = headers.indexOf("email");
+      const cvTextIdx = headers.indexOf("cv_text");
+      const githubIdx = headers.indexOf("github_url");
+
+      if (cvTextIdx === -1) {
+        return res.status(400).json({ message: "CSV must have a 'cv_text' column" });
+      }
+
+      const dataRows = rows.slice(1).filter((row: string[]) => row.some((cell: string) => cell.trim()));
+      const results: { imported: number; failed: number; errors: string[] } = {
+        imported: 0,
+        failed: 0,
+        errors: [],
+      };
+
+      for (let i = 0; i < dataRows.length; i++) {
+        const row = dataRows[i];
+        const rowNum = i + 2; // 1-based, accounting for header
+
+        // Check plan limits before each candidate
+        const canUpload = await checkLimits(userId);
+        if (!canUpload) {
+          results.errors.push(`Row ${rowNum}: Plan limit reached. Remaining rows skipped.`);
+          results.failed += dataRows.length - i;
+          break;
+        }
+
+        const cvText = (row[cvTextIdx] || "").trim();
+        if (!cvText) {
+          results.errors.push(`Row ${rowNum}: Empty cv_text, skipped`);
+          results.failed++;
+          continue;
+        }
+
+        const name = (nameIdx >= 0 ? row[nameIdx] : "").trim() || `Candidate (Row ${rowNum})`;
+        const email = (emailIdx >= 0 ? row[emailIdx] : "").trim() || null;
+        let githubUrl = (githubIdx >= 0 ? row[githubIdx] : "").trim() || null;
+
+        try {
+          // Call AI service /analyze-text endpoint
+          let analysis: any = {};
+          let analyzedCvText = cvText;
+
+          try {
+            const aiResponse = await fetch(`${AI_SERVICE_URL}/analyze-text`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                cv_text: cvText,
+                job_description: job.description,
+                github_url: githubUrl || undefined,
+              }),
+            });
+
+            if (!aiResponse.ok) {
+              const errBody = await aiResponse.text();
+              console.error(`AI service returned ${aiResponse.status} for row ${rowNum}:`, errBody);
+              throw new Error(`AI error: ${aiResponse.status}`);
+            }
+
+            const result = (await aiResponse.json()) as any;
+
+            if (!githubUrl && result.github_url) {
+              githubUrl = result.github_url;
+            }
+
+            if (result.result) {
+              try {
+                const rawResult = typeof result.result === "string" ? result.result : JSON.stringify(result.result);
+                const cleaned = stripMarkdownCodeFences(rawResult);
+                const parsed = JSON.parse(cleaned);
+                analysis = {
+                  skills: parsed.skills || [],
+                  experience: parsed.experience || [],
+                  education: parsed.education || [],
+                  projects: parsed.projects || [],
+                  score: parsed.matching_score || parsed.score || 0,
+                  vibeCodingScore: parsed.vibe_coding_score ?? 0,
+                  categoryScores: parsed.category_scores || null,
+                  analysisSummary: sanitizeText(parsed.summary || parsed.overall_fit || String(result.result)),
+                  rankReason: sanitizeText(parsed.rank_reason || ""),
+                };
+              } catch {
+                analysis = {
+                  skills: [],
+                  experience: [],
+                  education: [],
+                  projects: [],
+                  score: 50,
+                  vibeCodingScore: 0,
+                  categoryScores: null,
+                  analysisSummary: sanitizeText(String(result.result)),
+                  rankReason: "AI provided text summary",
+                };
+              }
+            }
+            analyzedCvText = sanitizeText(result.cv_text || cvText);
+          } catch (aiErr) {
+            console.error(`AI service error for row ${rowNum}:`, aiErr);
+            analysis = {
+              skills: [],
+              experience: [],
+              education: [],
+              projects: [],
+              score: 0,
+              vibeCodingScore: 0,
+              categoryScores: null,
+              analysisSummary: "AI analysis unavailable - will retry later.",
+              rankReason: "Analysis pending",
+            };
+            analyzedCvText = sanitizeText(cvText);
+          }
+
+          await storage.createCandidate({
+            name,
+            email,
+            resumeUrl: "",
+            githubUrl,
+            cvText: analyzedCvText,
+            userId,
+            jobId,
+            ...analysis,
+          });
+
+          await storage.incrementCvCount(userId);
+          results.imported++;
+        } catch (rowErr: any) {
+          console.error(`Error processing CSV row ${rowNum}:`, rowErr);
+          results.errors.push(`Row ${rowNum}: ${rowErr.message || "Unknown error"}`);
+          results.failed++;
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error processing CSV import:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   });

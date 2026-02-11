@@ -163,23 +163,44 @@ class Analyzer:
         You are an expert HR assistant specialized in analyzing CVs and matching them to job descriptions.
         You have access to the following tools:
         1. github_repository_extractor: Given a GitHub username, this tool retrieves their public repositories.
-        2. vibe_coding_percentage_checker: Given a GitHub repository URL, this tool analyzes the coding style percentage.
+        2. vibe_coding_percentage_checker: Given a GitHub repository URL, this tool analyzes how much of the code is AI-generated vs human-written. It returns a vibe_coding_score (0-100, where 100 = fully AI-generated). Use this score directly as the vibe_coding_score in your final response.
         3. github_status_checker: This tool retrieves the status of a candidate's GitHub profile, including contributions, repositories, and activity.
         4. cv_appropriateness_evaluator: This tool evaluates how well the candidate's CV matches the provided job description based on the summary of the CV.
         Use these tools to gather relevant information about the candidate and provide a comprehensive analysis of their skills, experience, and suitability for the job role.
         If a lot of repos are provided, just select the most important ones.
 
-        IMPORTANT: Your final response MUST be valid JSON with this structure:
+        IMPORTANT: Your final response MUST be valid JSON (no markdown code fences, no extra text) with this exact structure:
         {
             "skills": ["skill1", "skill2", ...],
             "experience": [{"role": "...", "company": "...", "duration": "...", "description": "..."}],
             "education": [{"degree": "...", "school": "...", "year": "..."}],
             "projects": [{"name": "...", "description": "..."}],
             "matching_score": 0-100,
-            "vibe_coding_score": 0-100,
+            "vibe_coding_score": 0-100 or null if no GitHub data available,
+            "category_scores": {
+                "technical": 0-100,
+                "experience": 0-100,
+                "education": 0-100,
+                "soft_skills": 0-100,
+                "culture_fit": 0-100,
+                "growth": 0-100
+            },
             "summary": "Overall analysis summary...",
             "rank_reason": "Why this candidate ranks at this level..."
         }
+
+        RULES for category_scores:
+        - "technical": Score based on how well the candidate's technical skills match the job requirements
+        - "experience": Score based on relevance and depth of work experience
+        - "education": Score based on educational background relevance
+        - "soft_skills": Score based on evidence of communication, teamwork, leadership
+        - "culture_fit": Score based on overall alignment with the role and company needs
+        - "growth": Score based on learning trajectory, certifications, personal projects
+
+        RULES for vibe_coding_score:
+        - If you used vibe_coding_percentage_checker, use the vibe_coding_score value from the tool result directly
+        - If no GitHub profile or repos were found, set to null
+        - Do NOT set to null if you received a score from the tool
         """
         self.messages = [{"role": "user", "content": cv}]
         self.job_description = job_description
@@ -397,8 +418,15 @@ class Analyzer:
         """Check vibe coding percentage for a GitHub repo."""
         ana = "https://vibecodedetector.com/api/analyze"
 
+        code_content = Analyzer.github_repo_important_sample(url)
+        if not code_content or not code_content.strip():
+            return {
+                "error": "Could not fetch code from repository",
+                "vibe_coding_score": 0,
+            }
+
         payload = {
-            "content": Analyzer.github_repo_important_sample(url),
+            "content": code_content,
             "type": "code",
         }
 
@@ -408,8 +436,18 @@ class Analyzer:
             "Referer": "https://vibecodedetector.com/",
         }
 
-        response = requests.post(ana, json=payload, headers=headers)
-        return response.json()
+        try:
+            response = requests.post(ana, json=payload, headers=headers, timeout=30)
+            result = response.json()
+            # Return a clear vibe_coding_score (100 = fully AI-generated, 0 = fully human)
+            return {
+                "vibe_coding_score": result.get("aiLikelihood", 0),
+                "human_craft_score": result.get("humanCraftScore", 100),
+                "label": result.get("suggestedLabel", "Unknown"),
+                "summary": result.get("vibeSummary", ""),
+            }
+        except Exception as e:
+            return {"error": str(e), "vibe_coding_score": 0}
 
     def github_status_checker(self, username: str) -> dict:
         """

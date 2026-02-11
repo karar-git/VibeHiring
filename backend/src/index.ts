@@ -53,6 +53,7 @@ async function runMigrations() {
         "projects" jsonb,
         "score" integer,
         "vibe_coding_score" integer,
+        "category_scores" jsonb,
         "analysis_summary" text,
         "rank_reason" text,
         "created_at" timestamp DEFAULT now(),
@@ -71,6 +72,7 @@ async function runMigrations() {
     // Add new columns to existing tables (safe to run multiple times)
     await client.query(`
       ALTER TABLE "candidates" ADD COLUMN IF NOT EXISTS "job_id" integer REFERENCES "jobs"("id");
+      ALTER TABLE "candidates" ADD COLUMN IF NOT EXISTS "category_scores" jsonb;
       ALTER TABLE "candidates" DROP COLUMN IF EXISTS "job_description";
     `);
     console.log("Database tables verified/created successfully");

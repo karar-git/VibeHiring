@@ -56,6 +56,43 @@ def analyze_resume():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/analyze-text", methods=["POST"])
+def analyze_text():
+    """Analyze raw CV text (no file upload needed). Used for CSV bulk import."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        cv_text = data.get("cv_text", "").strip()
+        job_description = data.get("job_description", "").strip()
+        github_url = data.get("github_url", "").strip() or None
+
+        if not cv_text:
+            return jsonify({"error": "cv_text is required"}), 400
+        if not job_description:
+            return jsonify({"error": "job_description is required"}), 400
+
+        # If a GitHub URL was provided, append it to the text so the AI sees it
+        if github_url and github_url not in cv_text:
+            cv_text += f"\n\nGitHub Profile: {github_url}"
+
+        # Reuse the same Analyzer as the file-based endpoint
+        analyzer_instance = Analyzer(cv_text, job_description)
+        result = analyzer_instance.analyze()
+
+        return jsonify(
+            {
+                "result": result,
+                "cv_text": cv_text,
+                "github_url": github_url,
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/health", methods=["GET"])
 def health_check():
     return jsonify({"status": "healthy"}), 200

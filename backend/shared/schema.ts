@@ -44,6 +44,7 @@ export const candidates = pgTable("candidates", {
   // Scoring & Ranking (relative to the job description)
   score: integer("score"),
   vibeCodingScore: integer("vibe_coding_score"),
+  categoryScores: jsonb("category_scores").$type<Record<string, number>>(),
   analysisSummary: text("analysis_summary"),
   rankReason: text("rank_reason"),
 
@@ -73,6 +74,7 @@ export const insertCandidateSchema = createInsertSchema(candidates).omit({
   createdAt: true,
   score: true,
   vibeCodingScore: true,
+  categoryScores: true,
   analysisSummary: true,
   rankReason: true,
   cvText: true,

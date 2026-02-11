@@ -68,3 +68,38 @@ export function useDeleteCandidate(jobId?: number) {
     },
   });
 }
+
+export interface CsvImportResult {
+  imported: number;
+  failed: number;
+  errors: string[];
+}
+
+export function useImportCsv(jobId: number) {
+  const queryClient = useQueryClient();
+  return useMutation<CsvImportResult, Error, File>({
+    mutationFn: async (csvFile: File) => {
+      const formData = new FormData();
+      formData.append("csvFile", csvFile);
+
+      const res = await apiFetch(`/api/jobs/${jobId}/candidates/import-csv`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 403) throw new Error(errorData.message || "Plan limit reached. Please upgrade.");
+        if (res.status === 400) throw new Error(errorData.message || "Invalid CSV file");
+        throw new Error(errorData.message || "Failed to import CSV");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs", jobId, "candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/stats"] });
+    },
+  });
+}
