@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, Upload, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { getToken } from "@/lib/api";
 import type { Job } from "@/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -16,6 +18,8 @@ export default function JobApplyPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [submitted, setSubmitted] = useState(false);
 
   const { data: job, isLoading: jobLoading } = useQuery<Job>({
@@ -34,6 +38,19 @@ export default function JobApplyPage() {
   });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
+  // Pre-fill name and email for logged-in applicants
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        applicantName:
+          prev.applicantName ||
+          [user.firstName, user.lastName].filter(Boolean).join(" "),
+        applicantEmail: prev.applicantEmail || user.email,
+      }));
+    }
+  }, [user]);
+
   const applyMutation = useMutation({
     mutationFn: async () => {
       const form = new FormData();
@@ -46,8 +63,16 @@ export default function JobApplyPage() {
         form.append("resumeFile", resumeFile);
       }
 
+      // Send auth token if user is logged in so the backend can link the application
+      const headers: Record<string, string> = {};
+      const token = getToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_BASE}/api/board/jobs/${id}/apply`, {
         method: "POST",
+        headers,
         body: form,
       });
 
@@ -60,6 +85,7 @@ export default function JobApplyPage() {
     },
     onSuccess: () => {
       setSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/my-applications"] });
       toast({
         title: "Application Submitted",
         description: "Your application has been sent successfully!",
@@ -127,7 +153,7 @@ export default function JobApplyPage() {
             <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm font-display">VH</span>
             </div>
-            <span className="font-display font-bold text-xl tracking-tight">VibeHiring</span>
+            <span className="font-display font-bold text-xl tracking-tight">VibeHire</span>
           </div>
         </Link>
       </header>

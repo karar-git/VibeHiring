@@ -10,13 +10,15 @@ import {
   X,
   Briefcase,
   Mic,
-  Globe
+  Globe,
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,13 +29,20 @@ export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Jobs", href: "/jobs", icon: Briefcase },
-    { name: "Interviews", href: "/interviews", icon: Mic },
-    { name: "Job Board", href: "/board", icon: Globe },
-    { name: "Subscription", href: "/subscription", icon: CreditCard },
-  ];
+  const isHR = user?.role !== "applicant";
+
+  const navigation = isHR
+    ? [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { name: "Jobs", href: "/jobs", icon: Briefcase },
+        { name: "Interviews", href: "/interviews", icon: Mic },
+        { name: "Job Board", href: "/board", icon: Globe },
+        { name: "Subscription", href: "/subscription", icon: CreditCard },
+      ]
+    : [
+        { name: "Browse Jobs", href: "/board", icon: Globe },
+        { name: "My Applications", href: "/my-applications", icon: FileText },
+      ];
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
@@ -42,8 +51,10 @@ export function Layout({ children }: LayoutProps) {
           <span className="text-white font-bold text-xl font-display">VH</span>
         </div>
         <div>
-          <h1 className="font-display font-bold text-lg tracking-tight">VibeHiring</h1>
-          <p className="text-xs text-muted-foreground font-medium">Smart Hiring</p>
+          <h1 className="font-display font-bold text-lg tracking-tight">VibeHire</h1>
+          <p className="text-xs text-muted-foreground font-medium">
+            {isHR ? "Hiring Dashboard" : "Job Seeker"}
+          </p>
         </div>
       </div>
 
@@ -79,7 +90,12 @@ export function Layout({ children }: LayoutProps) {
               </AvatarFallback>
             </Avatar>
             <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate">{user?.firstName} {user?.lastName}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold truncate">{user?.firstName} {user?.lastName}</p>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                  {isHR ? "HR" : "Seeker"}
+                </Badge>
+              </div>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
           </div>
@@ -117,7 +133,7 @@ export function Layout({ children }: LayoutProps) {
              <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm font-display">VH</span>
             </div>
-            <span className="font-display font-bold text-lg">VibeHiring</span>
+            <span className="font-display font-bold text-lg">VibeHire</span>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
             <Menu className="size-5" />

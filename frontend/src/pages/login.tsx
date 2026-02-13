@@ -8,21 +8,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
-  const { login, loginMutation, isAuthenticated } = useAuth();
+  const { login, loginMutation, isAuthenticated, user } = useAuth();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  if (isAuthenticated) {
-    setLocation("/dashboard");
+  if (isAuthenticated && user) {
+    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
     return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login({ email, password });
-      setLocation("/dashboard");
+      const result = await login({ email, password });
+      setLocation(result.user.role === "applicant" ? "/board" : "/dashboard");
     } catch {
       // Error is available via loginMutation.error
     }
@@ -35,7 +35,7 @@ export default function LoginPage() {
           <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/25">
             <span className="text-white font-bold text-xl font-display">VH</span>
           </div>
-          <span className="font-display font-bold text-2xl tracking-tight">VibeHiring</span>
+          <span className="font-display font-bold text-2xl tracking-tight">VibeHire</span>
         </div>
 
         <Card className="border-border/60 shadow-lg">

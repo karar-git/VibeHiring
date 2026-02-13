@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   passwordHash: varchar("password_hash").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  role: varchar("role").notNull().default("hr"), // "hr" | "applicant"
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -72,6 +73,7 @@ export const applications = pgTable("applications", {
   resumeUrl: text("resume_url"),
   coverLetter: text("cover_letter"),
   status: text("status").notNull().default("pending"), // pending, reviewed, shortlisted, rejected
+  userId: varchar("user_id").references(() => users.id), // logged-in applicant's user ID
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -140,6 +142,7 @@ export const registerSchema = z.object({
   password: z.string().min(6),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  role: z.enum(["hr", "applicant"]).default("hr"),
 });
 
 export const loginSchema = z.object({

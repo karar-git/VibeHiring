@@ -75,6 +75,7 @@ async function runMigrations() {
       ALTER TABLE "candidates" ADD COLUMN IF NOT EXISTS "category_scores" jsonb;
       ALTER TABLE "candidates" DROP COLUMN IF EXISTS "job_description";
       ALTER TABLE "jobs" ADD COLUMN IF NOT EXISTS "is_public" boolean NOT NULL DEFAULT false;
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" varchar NOT NULL DEFAULT 'hr';
     `);
 
     // Create applications table
@@ -87,8 +88,11 @@ async function runMigrations() {
         "resume_url" text,
         "cover_letter" text,
         "status" text NOT NULL DEFAULT 'pending',
+        "user_id" varchar REFERENCES "users"("id"),
         "created_at" timestamp DEFAULT now()
       );
+
+      ALTER TABLE "applications" ADD COLUMN IF NOT EXISTS "user_id" varchar REFERENCES "users"("id");
     `);
 
     // Create interviews table

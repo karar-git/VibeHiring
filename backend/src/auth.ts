@@ -55,7 +55,7 @@ export async function handleRegister(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
     }
 
-    const { email, password, firstName, lastName } = parsed.data;
+    const { email, password, firstName, lastName, role } = parsed.data;
 
     // Check if user already exists
     const existing = await storage.getUserByEmail(email);
@@ -64,7 +64,7 @@ export async function handleRegister(req: Request, res: Response) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await storage.createUser(email, passwordHash, firstName, lastName);
+    const user = await storage.createUser(email, passwordHash, firstName, lastName, role);
     const token = generateToken(user.id);
 
     return res.status(201).json({
@@ -74,6 +74,7 @@ export async function handleRegister(req: Request, res: Response) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -109,6 +110,7 @@ export async function handleLogin(req: Request, res: Response) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -129,6 +131,7 @@ export async function handleGetMe(req: Request, res: Response) {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      role: user.role,
       profileImageUrl: user.profileImageUrl,
       createdAt: user.createdAt,
     });

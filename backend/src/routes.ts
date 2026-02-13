@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "./storage.js";
-import { requireAuth, handleRegister, handleLogin, handleGetMe } from "./auth.js";
+import { requireAuth, handleRegister, handleLogin, handleGetMe, verifyToken } from "./auth.js";
 import multer from "multer";
 import fs from "fs";
 
@@ -519,6 +519,15 @@ export function registerRoutes(app: Express): void {
         return res.status(400).json({ message: "Name and email are required" });
       }
 
+      // Optionally attach logged-in user's ID
+      let userId = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const payload = verifyToken(token);
+        if (payload) userId = payload.userId;
+      }
+
       const file = req.file;
       let resumeUrl = null;
       if (file) {
@@ -531,6 +540,7 @@ export function registerRoutes(app: Express): void {
         applicantEmail,
         resumeUrl,
         coverLetter: coverLetter || null,
+        userId,
       });
 
       res.status(201).json(application);
@@ -588,6 +598,13 @@ export function registerRoutes(app: Express): void {
 
     await storage.deleteApplication(app.id);
     res.status(204).send();
+  });
+
+  // ─── Applicant: My Applications ───
+  app.get("/api/my-applications", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const apps = await storage.listApplicationsByUser(userId);
+    res.json(apps);
   });
 
   // ─── Interviews API ───

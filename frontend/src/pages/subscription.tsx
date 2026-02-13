@@ -34,7 +34,7 @@ export default function SubscriptionPage() {
       id: 'free',
       name: 'Free',
       price: '$0',
-      description: 'Perfect for trying out VibeHiring.',
+      description: 'Perfect for trying out VibeHire.',
       features: ['5 Resume Analyses per month', 'Basic Skills Extraction', 'Standard Support'],
       limit: '5 CVs/mo'
     },

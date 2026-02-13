@@ -2,15 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Briefcase, MapPin, Clock, ArrowRight, Search } from "lucide-react";
+import { Briefcase, MapPin, Clock, ArrowRight, Search, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import type { Job } from "@/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export default function JobBoardPage() {
   const [search, setSearch] = useState("");
+  const { user, isAuthenticated } = useAuth();
 
   const { data: jobs, isLoading } = useQuery<Job[]>({
     queryKey: ["/api/board/jobs"],
@@ -36,13 +38,31 @@ export default function JobBoardPage() {
             <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm font-display">VH</span>
             </div>
-            <span className="font-display font-bold text-xl tracking-tight">VibeHiring</span>
+            <span className="font-display font-bold text-xl tracking-tight">VibeHire</span>
           </div>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/login">
-            <Button variant="ghost" className="font-medium">HR Login</Button>
-          </Link>
+          {isAuthenticated && user?.role === "applicant" ? (
+            <Link href="/my-applications">
+              <Button variant="ghost" className="font-medium">
+                <FileText className="size-4 mr-2" />
+                My Applications
+              </Button>
+            </Link>
+          ) : !isAuthenticated ? (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" className="font-medium">Log in</Button>
+              </Link>
+              <Link href="/register">
+                <Button className="font-medium rounded-full">Sign Up</Button>
+              </Link>
+            </>
+          ) : (
+            <Link href="/dashboard">
+              <Button variant="ghost" className="font-medium">Dashboard</Button>
+            </Link>
+          )}
         </div>
       </header>
 
@@ -148,7 +168,7 @@ export default function JobBoardPage() {
           Powered by{" "}
           <Link href="/">
             <span className="font-bold text-foreground cursor-pointer hover:text-primary transition-colors">
-              VibeHiring
+              VibeHire
             </span>
           </Link>{" "}
           - AI-powered recruitment

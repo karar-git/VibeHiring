@@ -19,7 +19,7 @@ export default function LandingPage() {
   const [, setLocation] = useLocation();
 
   if (!isLoading && user) {
-    setLocation("/dashboard");
+    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
     return null;
   }
 
@@ -31,7 +31,7 @@ export default function LandingPage() {
           <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
             <span className="text-white font-bold text-sm font-display">VH</span>
           </div>
-          <span className="font-display font-bold text-xl tracking-tight">VibeHiring</span>
+          <span className="font-display font-bold text-xl tracking-tight">VibeHire</span>
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <a href="#features" className="hover:text-primary transition-colors">Features</a>
@@ -341,7 +341,7 @@ export default function LandingPage() {
                   Built for modern hiring teams
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-6">
-                  VibeHiring was born from the frustration of sifting through hundreds of resumes manually. 
+                  VibeHire was born from the frustration of sifting through hundreds of resumes manually. 
                   We believe that hiring should be about finding the right people, not drowning in paperwork.
                 </p>
                 <p className="text-muted-foreground leading-relaxed mb-8">
@@ -400,10 +400,10 @@ export default function LandingPage() {
             <div className="size-6 rounded bg-primary flex items-center justify-center">
               <span className="text-white font-bold text-xs">VH</span>
             </div>
-            <span className="font-bold font-display">VibeHiring</span>
+            <span className="font-bold font-display">VibeHire</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            © 2025 VibeHiring. All rights reserved.
+            © 2025 VibeHire. All rights reserved.
           </div>
         </div>
       </footer>

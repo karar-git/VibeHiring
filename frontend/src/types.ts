@@ -5,6 +5,7 @@ export interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  role: "hr" | "applicant";
   profileImageUrl: string | null;
   createdAt: string;
 }
@@ -74,6 +75,7 @@ export interface Application {
   resumeUrl: string | null;
   coverLetter: string | null;
   status: string;
+  userId: string | null;
   createdAt: string | null;
 }
 

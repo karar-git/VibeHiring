@@ -14,12 +14,13 @@ export class DatabaseStorage {
     return user;
   }
 
-  async createUser(email: string, passwordHash: string, firstName?: string, lastName?: string): Promise<User> {
+  async createUser(email: string, passwordHash: string, firstName?: string, lastName?: string, role?: string): Promise<User> {
     const [user] = await db.insert(users).values({
       email,
       passwordHash,
       firstName: firstName || null,
       lastName: lastName || null,
+      role: role || "hr",
     }).returning();
     return user;
   }
@@ -185,6 +186,19 @@ export class DatabaseStorage {
 
   async deleteApplication(id: number) {
     await db.delete(applications).where(eq(applications.id, id));
+  }
+
+  async listApplicationsByUser(userId: string) {
+    return db
+      .select({
+        application: applications,
+        jobTitle: jobs.title,
+        jobStatus: jobs.status,
+      })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .where(eq(applications.userId, userId))
+      .orderBy(desc(applications.createdAt));
   }
 
   // Interviews (AI voice interviews)

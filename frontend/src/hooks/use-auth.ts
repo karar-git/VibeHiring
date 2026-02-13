@@ -32,6 +32,7 @@ interface RegisterInput {
   password: string;
   firstName?: string;
   lastName?: string;
+  role?: "hr" | "applicant";
 }
 
 interface AuthResponse {
