@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { apiFetch } from "@/lib/api";
-import { Loader2, Briefcase, Clock, FileText, ExternalLink } from "lucide-react";
+import { Loader2, Briefcase, Clock, FileText, ExternalLink, Mic } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import type { Application } from "@/types";
 
@@ -11,6 +12,8 @@ interface MyApplication {
   application: Application;
   jobTitle: string;
   jobStatus: string;
+  interviewCount: number;
+  latestInterviewStatus: string | null;
 }
 
 export default function MyApplicationsPage() {
@@ -109,18 +112,29 @@ export default function MyApplicationsPage() {
                       >
                         {item.application.status}
                       </span>
-                      {item.application.resumeUrl && (
-                        <a
-                          href={item.application.resumeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-primary hover:underline"
-                        >
-                          <FileText className="size-3" />
-                          Resume
-                          <ExternalLink className="size-3" />
-                        </a>
-                      )}
+                        {item.application.resumeUrl && (
+                          <a
+                            href={item.application.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-primary hover:underline"
+                          >
+                            <FileText className="size-3" />
+                            Resume
+                            <ExternalLink className="size-3" />
+                          </a>
+                        )}
+                        {item.interviewCount > 0 && (
+                          <Link href="/my-interviews">
+                            <Badge
+                              variant="outline"
+                              className="cursor-pointer bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800 gap-1"
+                            >
+                              <Mic className="size-3" />
+                              Interview {item.latestInterviewStatus === "completed" ? "Completed" : "Invited"}
+                            </Badge>
+                          </Link>
+                        )}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">

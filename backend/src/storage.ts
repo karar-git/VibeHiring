@@ -189,7 +189,7 @@ export class DatabaseStorage {
   }
 
   async listApplicationsByUser(userId: string) {
-    return db
+    const apps = await db
       .select({
         application: applications,
         jobTitle: jobs.title,
@@ -199,6 +199,25 @@ export class DatabaseStorage {
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
       .where(eq(applications.userId, userId))
       .orderBy(desc(applications.createdAt));
+
+    // Enrich with interview info for each application
+    const enriched = await Promise.all(
+      apps.map(async (row) => {
+        const interviewRows = await db
+          .select()
+          .from(interviews)
+          .where(eq(interviews.applicationId, row.application.id))
+          .orderBy(desc(interviews.createdAt));
+
+        return {
+          ...row,
+          interviewCount: interviewRows.length,
+          latestInterviewStatus: interviewRows[0]?.status || null,
+        };
+      })
+    );
+
+    return enriched;
   }
 
   // Interviews (AI voice interviews)
@@ -230,6 +249,20 @@ export class DatabaseStorage {
       .select()
       .from(interviews)
       .where(eq(interviews.userId, userId))
+      .orderBy(desc(interviews.createdAt));
+  }
+
+  async listInterviewsByApplicant(applicantUserId: string) {
+    return db
+      .select({
+        interview: interviews,
+        jobTitle: jobs.title,
+        applicationId: applications.id,
+      })
+      .from(interviews)
+      .innerJoin(applications, eq(interviews.applicationId, applications.id))
+      .innerJoin(jobs, eq(interviews.jobId, jobs.id))
+      .where(eq(applications.userId, applicantUserId))
       .orderBy(desc(interviews.createdAt));
   }
 

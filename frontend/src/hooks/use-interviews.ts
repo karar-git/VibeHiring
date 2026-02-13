@@ -2,6 +2,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type { Interview } from "@/types";
 
+interface MyInterview {
+  interview: Interview;
+  jobTitle: string;
+  applicationId: number;
+}
+
+export function useMyInterviews() {
+  return useQuery<MyInterview[]>({
+    queryKey: ["/api/my-interviews"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/my-interviews");
+      if (!res.ok) throw new Error("Failed to fetch interviews");
+      return res.json();
+    },
+  });
+}
+
 export function useInterviews() {
   return useQuery<Interview[]>({
     queryKey: ["/api/interviews"],

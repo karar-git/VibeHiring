@@ -15,6 +15,7 @@ import JobBoardPage from "@/pages/job-board";
 import JobApplyPage from "@/pages/job-apply";
 import InterviewsPage from "@/pages/interviews";
 import MyApplicationsPage from "@/pages/my-applications";
+import MyInterviewsPage from "@/pages/my-interviews";
 import ApplicantHomePage from "@/pages/applicant-home";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,6 +81,9 @@ function Router() {
       </Route>
       <Route path="/my-applications">
         <ProtectedRoute component={MyApplicationsPage} allowedRoles={["applicant"]} />
+      </Route>
+      <Route path="/my-interviews">
+        <ProtectedRoute component={MyInterviewsPage} allowedRoles={["applicant"]} />
       </Route>
 
       {/* Public routes (accessible to anyone) */}

@@ -44,6 +44,7 @@ export function Layout({ children }: LayoutProps) {
         { name: "Home", href: "/home", icon: Home },
         { name: "Browse Jobs", href: "/board", icon: Globe },
         { name: "My Applications", href: "/my-applications", icon: FileText },
+        { name: "My Interviews", href: "/my-interviews", icon: Mic },
       ];
 
   const NavContent = () => (

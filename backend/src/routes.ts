@@ -543,7 +543,109 @@ export function registerRoutes(app: Express): void {
         userId,
       });
 
+      // Respond immediately so the applicant doesn't wait for AI analysis
       res.status(201).json(application);
+
+      // ─── Auto-analyze: create a candidate entry for the HR user (background) ───
+      if (file && job.userId) {
+        (async () => {
+          try {
+            let cvText = "";
+            let githubUrl: string | null = null;
+            let analysis: any = {};
+
+            const fileBuffer = fs.readFileSync(file.path);
+            const blob = new Blob([fileBuffer], { type: file.mimetype });
+            const formData = new FormData();
+            formData.append("cv", blob, file.originalname);
+            formData.append("job_description", job.description);
+
+            try {
+              const aiResponse = await fetch(`${AI_SERVICE_URL}/analyze`, {
+                method: "POST",
+                body: formData,
+              });
+
+              if (!aiResponse.ok) {
+                const errBody = await aiResponse.text();
+                console.error(`AI service returned ${aiResponse.status} for application ${application.id}:`, errBody);
+                throw new Error(`AI service error: ${aiResponse.status}`);
+              }
+
+              const result = (await aiResponse.json()) as any;
+
+              if (!githubUrl && result.github_url) {
+                githubUrl = result.github_url;
+              }
+
+              if (result.result) {
+                try {
+                  const rawResult = typeof result.result === "string" ? result.result : JSON.stringify(result.result);
+                  const cleaned = stripMarkdownCodeFences(rawResult);
+                  const parsed = JSON.parse(cleaned);
+                  analysis = {
+                    skills: parsed.skills || [],
+                    experience: parsed.experience || [],
+                    education: parsed.education || [],
+                    projects: parsed.projects || [],
+                    score: parsed.matching_score || parsed.score || 0,
+                    vibeCodingScore: parsed.vibe_coding_score ?? 0,
+                    categoryScores: parsed.category_scores || null,
+                    analysisSummary: sanitizeText(parsed.summary || parsed.overall_fit || String(result.result)),
+                    rankReason: sanitizeText(parsed.rank_reason || ""),
+                  };
+                } catch {
+                  analysis = {
+                    skills: [],
+                    experience: [],
+                    education: [],
+                    projects: [],
+                    score: 50,
+                    vibeCodingScore: 0,
+                    categoryScores: null,
+                    analysisSummary: sanitizeText(String(result.result)),
+                    rankReason: "AI provided text summary",
+                  };
+                }
+              }
+              cvText = sanitizeText(result.cv_text || "");
+            } catch (e) {
+              console.error("Error calling AI service for application:", e);
+              cvText = "Could not extract text - AI service unavailable.";
+              analysis = {
+                skills: [],
+                experience: [],
+                education: [],
+                projects: [],
+                score: 0,
+                vibeCodingScore: 0,
+                categoryScores: null,
+                analysisSummary: "AI analysis unavailable - the AI service may be starting up.",
+                rankReason: "Analysis pending",
+              };
+            }
+
+            // Create a candidate entry under the HR user who owns the job
+            await storage.createCandidate({
+              name: applicantName,
+              email: applicantEmail || null,
+              resumeUrl: resumeUrl || "",
+              githubUrl,
+              cvText,
+              userId: job.userId,
+              jobId,
+              ...analysis,
+            });
+
+            // Increment the HR user's CV count
+            await storage.incrementCvCount(job.userId!);
+
+            console.log(`Auto-analyzed application ${application.id} and created candidate for job ${jobId}`);
+          } catch (err) {
+            console.error("Background auto-analysis failed for application:", application.id, err);
+          }
+        })();
+      }
     } catch (error) {
       console.error("Error processing application:", error);
       res.status(500).json({ message: "Internal Server Error" });
@@ -605,6 +707,13 @@ export function registerRoutes(app: Express): void {
     const userId = req.userId!;
     const apps = await storage.listApplicationsByUser(userId);
     res.json(apps);
+  });
+
+  // ─── Applicant: My Interviews ───
+  app.get("/api/my-interviews", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const interviewsList = await storage.listInterviewsByApplicant(userId);
+    res.json(interviewsList);
   });
 
   // ─── HR Chatbot (proxy to AI service) ───

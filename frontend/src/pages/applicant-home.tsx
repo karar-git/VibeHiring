@@ -12,9 +12,11 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Mic,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import type { Application } from "@/types";
 
@@ -22,6 +24,8 @@ interface MyApplication {
   application: Application;
   jobTitle: string;
   jobStatus: string;
+  interviewCount: number;
+  latestInterviewStatus: string | null;
 }
 
 export default function ApplicantHomePage() {
@@ -73,7 +77,7 @@ export default function ApplicantHomePage() {
   const total = applications?.length || 0;
   const pending = applications?.filter((a) => a.application.status === "pending").length || 0;
   const reviewed = applications?.filter((a) => ["reviewed", "shortlisted", "interviewing"].includes(a.application.status)).length || 0;
-  const rejected = applications?.filter((a) => a.application.status === "rejected").length || 0;
+  const interviewInvites = applications?.filter((a) => a.interviewCount > 0).length || 0;
 
   return (
     <Layout>
@@ -117,11 +121,11 @@ export default function ApplicantHomePage() {
               bg: "bg-blue-100 dark:bg-blue-900/30",
             },
             {
-              label: "Rejected",
-              value: rejected,
-              icon: XCircle,
-              color: "text-red-500",
-              bg: "bg-red-100 dark:bg-red-900/30",
+              label: "Interviews",
+              value: interviewInvites,
+              icon: Mic,
+              color: "text-purple-600",
+              bg: "bg-purple-100 dark:bg-purple-900/30",
             },
           ].map((stat, i) => (
             <div
@@ -230,6 +234,17 @@ export default function ApplicantHomePage() {
                             Resume
                             <ExternalLink className="size-3" />
                           </a>
+                        )}
+                        {item.interviewCount > 0 && (
+                          <Link href="/my-interviews">
+                            <Badge
+                              variant="outline"
+                              className="cursor-pointer bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800 gap-1"
+                            >
+                              <Mic className="size-3" />
+                              Interview {item.latestInterviewStatus === "completed" ? "Completed" : "Invited"}
+                            </Badge>
+                          </Link>
                         )}
                       </div>
                     </div>
