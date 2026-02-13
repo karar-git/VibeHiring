@@ -21,7 +21,7 @@ export function useUpdateSubscription() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (plan: "free" | "pro" | "enterprise") => {
-      const res = await apiFetch("/api/subscription", {
+      const res = await apiFetch("/api/subscription/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),

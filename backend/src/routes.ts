@@ -146,8 +146,8 @@ export function registerRoutes(app: Express): void {
     if (!job) return res.status(404).json({ message: "Job not found" });
     if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
 
-    const { title, description, status } = req.body;
-    const updated = await storage.updateJob(job.id, { title, description, status });
+    const { title, description, status, isPublic } = req.body;
+    const updated = await storage.updateJob(job.id, { title, description, status, isPublic });
     res.json(updated);
   });
 
@@ -493,5 +493,253 @@ export function registerRoutes(app: Express): void {
     }
     const sub = await storage.updateSubscription(userId, plan);
     res.json(sub);
+  });
+
+  // ─── Public Job Board API (no auth required) ───
+  app.get("/api/board/jobs", async (_req, res) => {
+    const publicJobs = await storage.listPublicJobs();
+    res.json(publicJobs);
+  });
+
+  app.get("/api/board/jobs/:id", async (req, res) => {
+    const job = await storage.getPublicJob(Number(req.params.id));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    res.json(job);
+  });
+
+  // ─── Applications API (public submission, HR review) ───
+  app.post("/api/board/jobs/:id/apply", upload.single("resumeFile"), async (req, res) => {
+    try {
+      const jobId = Number(req.params.id);
+      const job = await storage.getPublicJob(jobId);
+      if (!job) return res.status(404).json({ message: "Job not found or not accepting applications" });
+
+      const { applicantName, applicantEmail, coverLetter } = req.body;
+      if (!applicantName || !applicantEmail) {
+        return res.status(400).json({ message: "Name and email are required" });
+      }
+
+      const file = req.file;
+      let resumeUrl = null;
+      if (file) {
+        resumeUrl = `/uploads/${file.filename}`;
+      }
+
+      const application = await storage.createApplication({
+        jobId,
+        applicantName,
+        applicantEmail,
+        resumeUrl,
+        coverLetter: coverLetter || null,
+      });
+
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("Error processing application:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // HR: List applications for a job
+  app.get("/api/jobs/:jobId/applications", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.jobId));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const apps = await storage.listApplicationsByJob(job.id);
+    res.json(apps);
+  });
+
+  // HR: Get application count for a job
+  app.get("/api/jobs/:jobId/applications/count", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.jobId));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const count = await storage.getApplicationCountByJob(job.id);
+    res.json({ count });
+  });
+
+  // HR: Update application status
+  app.patch("/api/applications/:id/status", requireAuth, async (req, res) => {
+    const app = await storage.getApplication(Number(req.params.id));
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    // Verify ownership through the job
+    const job = await storage.getJob(app.jobId);
+    if (!job || job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const { status } = req.body;
+    if (!["pending", "reviewed", "shortlisted", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const updated = await storage.updateApplicationStatus(app.id, status);
+    res.json(updated);
+  });
+
+  // HR: Delete application
+  app.delete("/api/applications/:id", requireAuth, async (req, res) => {
+    const app = await storage.getApplication(Number(req.params.id));
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    const job = await storage.getJob(app.jobId);
+    if (!job || job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    await storage.deleteApplication(app.id);
+    res.status(204).send();
+  });
+
+  // ─── Interviews API ───
+  app.post("/api/jobs/:jobId/interviews", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const jobId = Number(req.params.jobId);
+
+    const job = await storage.getJob(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+
+    const { candidateId, applicationId, voice, scheduledAt } = req.body;
+
+    // Generate a unique session ID
+    const sessionId = `interview_${jobId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const interview = await storage.createInterview({
+      jobId,
+      candidateId: candidateId || null,
+      applicationId: applicationId || null,
+      sessionId,
+      status: "pending",
+      voice: voice || "NATF2",
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+      userId,
+    });
+
+    // Start the interview session on the AI service
+    try {
+      const aiResponse = await fetch(`${AI_SERVICE_URL}/interview/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          job_description: job.description,
+          voice: voice || "NATF2",
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        console.error("Failed to start AI interview session:", await aiResponse.text());
+      }
+    } catch (e) {
+      console.error("Error starting AI interview session:", e);
+    }
+
+    res.status(201).json(interview);
+  });
+
+  app.get("/api/jobs/:jobId/interviews", requireAuth, async (req, res) => {
+    const job = await storage.getJob(Number(req.params.jobId));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const interviewsList = await storage.listInterviewsByJob(job.id);
+    res.json(interviewsList);
+  });
+
+  app.get("/api/interviews", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const interviewsList = await storage.listInterviewsByUser(userId);
+    res.json(interviewsList);
+  });
+
+  app.get("/api/interviews/:id", requireAuth, async (req, res) => {
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+    if (interview.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+    res.json(interview);
+  });
+
+  // Proxy interview audio to AI service
+  app.post("/api/interviews/:id/respond", requireAuth, async (req, res) => {
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+    if (interview.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const { audio_url, candidate_text } = req.body;
+
+    try {
+      const aiResponse = await fetch(`${AI_SERVICE_URL}/interview/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: interview.sessionId,
+          audio_url,
+          candidate_text,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errBody = await aiResponse.text();
+        return res.status(aiResponse.status).json({ message: errBody });
+      }
+
+      const result = await aiResponse.json();
+
+      // Update interview status if needed
+      if (interview.status === "pending") {
+        await storage.updateInterview(interview.id, { status: "in_progress" });
+      }
+
+      res.json(result);
+    } catch (e: any) {
+      console.error("Error proxying interview response:", e);
+      res.status(500).json({ message: "AI service unavailable" });
+    }
+  });
+
+  // Complete and evaluate interview
+  app.post("/api/interviews/:id/evaluate", requireAuth, async (req, res) => {
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+    if (interview.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    try {
+      const aiResponse = await fetch(`${AI_SERVICE_URL}/interview/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: interview.sessionId }),
+      });
+
+      if (!aiResponse.ok) {
+        const errBody = await aiResponse.text();
+        return res.status(aiResponse.status).json({ message: errBody });
+      }
+
+      const result = (await aiResponse.json()) as any;
+
+      // Save evaluation to database
+      await storage.updateInterview(interview.id, {
+        status: "completed",
+        conversation: result.conversation || [],
+        evaluation: result.evaluation || {},
+        overallScore: result.evaluation?.overall_score || null,
+        completedAt: new Date(),
+      });
+
+      const updated = await storage.getInterview(interview.id);
+      res.json(updated);
+    } catch (e: any) {
+      console.error("Error evaluating interview:", e);
+      res.status(500).json({ message: "AI service unavailable" });
+    }
+  });
+
+  app.delete("/api/interviews/:id", requireAuth, async (req, res) => {
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+    if (interview.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    await storage.deleteInterview(interview.id);
+    res.status(204).send();
   });
 }

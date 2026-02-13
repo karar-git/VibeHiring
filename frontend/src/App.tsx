@@ -11,6 +11,9 @@ import JobsPage from "@/pages/jobs";
 import JobDetailPage from "@/pages/job-detail";
 import CandidateDetailPage from "@/pages/candidate-detail";
 import SubscriptionPage from "@/pages/subscription";
+import JobBoardPage from "@/pages/job-board";
+import JobApplyPage from "@/pages/job-apply";
+import InterviewsPage from "@/pages/interviews";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -57,6 +60,11 @@ function Router() {
       <Route path="/subscription">
         <ProtectedRoute component={SubscriptionPage} />
       </Route>
+      <Route path="/interviews">
+        <ProtectedRoute component={InterviewsPage} />
+      </Route>
+      <Route path="/board" component={JobBoardPage} />
+      <Route path="/board/:id" component={JobApplyPage} />
       <Route component={NotFound} />
     </Switch>
   );

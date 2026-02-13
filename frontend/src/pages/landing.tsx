@@ -4,10 +4,14 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
   CheckCircle2, 
+  Check,
   Code2, 
   BrainCircuit, 
   LineChart,
-  ArrowRight 
+  ArrowRight,
+  Mic,
+  Globe,
+  Users
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -33,6 +37,7 @@ export default function LandingPage() {
           <a href="#features" className="hover:text-primary transition-colors">Features</a>
           <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
           <a href="#about" className="hover:text-primary transition-colors">About</a>
+          <Link href="/board" className="hover:text-primary transition-colors">Job Board</Link>
         </nav>
         <div className="flex items-center gap-4">
           <Link href="/login">
@@ -81,9 +86,11 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="h-14 px-8 text-base rounded-full border-2">
-                  View Demo
-                </Button>
+                <a href="#features">
+                  <Button size="lg" variant="outline" className="h-14 px-8 text-base rounded-full border-2">
+                    View Demo
+                  </Button>
+                </a>
               </div>
               <div className="mt-8 flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex -space-x-2">
@@ -178,9 +185,31 @@ export default function LandingPage() {
                   icon: LineChart,
                   title: "Smart Ranking",
                   desc: "Candidates are scored based on your specific job requirements, surfacing the best talent instantly."
+                },
+                {
+                  icon: Mic,
+                  title: "AI Voice Interviews",
+                  desc: "Conduct automated voice interviews powered by AI. Candidates speak naturally while our AI evaluates their responses."
+                },
+                {
+                  icon: Globe,
+                  title: "Public Job Board",
+                  desc: "Post jobs publicly and let candidates apply directly. Manage applications from your dashboard seamlessly."
+                },
+                {
+                  icon: Users,
+                  title: "Candidate Pipeline",
+                  desc: "Track candidates from application to interview to hire. Full visibility into your recruitment funnel."
                 }
               ].map((feature, i) => (
-                <div key={i} className="bg-card p-8 rounded-2xl border border-border/50 hover:shadow-lg transition-all hover:-translate-y-1">
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="bg-card p-8 rounded-2xl border border-border/50 hover:shadow-lg transition-all hover:-translate-y-1"
+                >
                   <div className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6">
                     <feature.icon className="size-6" />
                   </div>
@@ -188,8 +217,178 @@ export default function LandingPage() {
                   <p className="text-muted-foreground leading-relaxed">
                     {feature.desc}
                   </p>
-                </div>
+                </motion.div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="text-3xl font-display font-bold mb-4">Simple, transparent pricing</h2>
+              <p className="text-muted-foreground">Start free and scale as your hiring needs grow. No hidden fees.</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {[
+                {
+                  name: "Free",
+                  price: "$0",
+                  period: "forever",
+                  description: "Perfect for small teams getting started",
+                  features: [
+                    "Up to 5 CV analyses per month",
+                    "AI-powered resume parsing",
+                    "Basic candidate ranking",
+                    "1 active job posting",
+                  ],
+                  cta: "Get Started",
+                  popular: false,
+                },
+                {
+                  name: "Pro",
+                  price: "$29",
+                  period: "/month",
+                  description: "For growing teams with serious hiring needs",
+                  features: [
+                    "Up to 50 CV analyses per month",
+                    "AI Voice Interviews",
+                    "Vibe Coding analysis",
+                    "Public Job Board access",
+                    "CSV bulk import",
+                    "Priority support",
+                  ],
+                  cta: "Start Pro Trial",
+                  popular: true,
+                },
+                {
+                  name: "Enterprise",
+                  price: "$99",
+                  period: "/month",
+                  description: "Unlimited hiring power for large organizations",
+                  features: [
+                    "Unlimited CV analyses",
+                    "Unlimited AI Voice Interviews",
+                    "Unlimited job postings",
+                    "Advanced analytics & reporting",
+                    "API access",
+                    "Dedicated account manager",
+                  ],
+                  cta: "Contact Sales",
+                  popular: false,
+                },
+              ].map((plan, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.15 }}
+                  viewport={{ once: true }}
+                  className={`relative bg-card p-8 rounded-2xl border-2 transition-all hover:-translate-y-1 ${
+                    plan.popular 
+                      ? "border-primary shadow-xl shadow-primary/10" 
+                      : "border-border/50 hover:shadow-lg"
+                  }`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                      Most Popular
+                    </div>
+                  )}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold font-display mb-2">{plan.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold font-display">{plan.price}</span>
+                      <span className="text-muted-foreground text-sm">{plan.period}</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, j) => (
+                      <li key={j} className="flex items-center gap-2 text-sm">
+                        <Check className="size-4 text-primary flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/register">
+                    <Button 
+                      className={`w-full rounded-full ${plan.popular ? "shadow-lg shadow-primary/20" : ""}`}
+                      variant={plan.popular ? "default" : "outline"}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section id="about" className="py-24 bg-muted/30">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid md:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <h2 className="text-3xl font-display font-bold mb-6">
+                  Built for modern hiring teams
+                </h2>
+                <p className="text-muted-foreground leading-relaxed mb-6">
+                  VibeHiring was born from the frustration of sifting through hundreds of resumes manually. 
+                  We believe that hiring should be about finding the right people, not drowning in paperwork.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mb-8">
+                  Our AI-powered platform combines resume analysis, GitHub vibe coding detection, 
+                  and automated voice interviews to give you a complete picture of every candidate 
+                  in seconds, not hours.
+                </p>
+                <div className="grid grid-cols-3 gap-6">
+                  {[
+                    { value: "10x", label: "Faster screening" },
+                    { value: "95%", label: "Accuracy rate" },
+                    { value: "1K+", label: "Hiring managers" },
+                  ].map((stat, i) => (
+                    <div key={i} className="text-center">
+                      <div className="text-2xl font-bold font-display text-primary">{stat.value}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="space-y-4"
+              >
+                {[
+                  {
+                    title: "AI-First Approach",
+                    desc: "Every feature is powered by cutting-edge AI models. From resume parsing to voice interviews, we leverage the latest in machine learning.",
+                  },
+                  {
+                    title: "Privacy & Security",
+                    desc: "Your data is encrypted at rest and in transit. We never share candidate data with third parties.",
+                  },
+                  {
+                    title: "Open & Extensible",
+                    desc: "Built with modern technologies. Integrate with your existing ATS, HRIS, or build custom workflows via our API.",
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="bg-card p-6 rounded-2xl border border-border/50">
+                    <h3 className="font-bold font-display mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </motion.div>
             </div>
           </div>
         </section>
@@ -204,7 +403,7 @@ export default function LandingPage() {
             <span className="font-bold font-display">VibeHiring</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            © 2024 VibeHiring. All rights reserved.
+            © 2025 VibeHiring. All rights reserved.
           </div>
         </div>
       </footer>

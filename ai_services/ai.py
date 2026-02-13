@@ -556,3 +556,251 @@ class Analyzer:
             return json.loads(content)
         except json.JSONDecodeError:
             return {"overall_fit": content, "matching_score": 50}
+
+
+class VoiceInterviewer:
+    """
+    AI Voice Interview engine using FAL.ai's PersonaPlex audio-to-audio model.
+    Conducts conversational interviews with candidates and evaluates their responses.
+    """
+
+    FAL_ENDPOINT = "https://queue.fal.run/fal-ai/personaplex"
+    FAL_RESULT_URL = "https://queue.fal.run/fal-ai/personaplex/requests"
+
+    # Available voice options
+    VOICES = [
+        "NATF0",
+        "NATF1",
+        "NATF2",
+        "NATF3",
+        "NATM0",
+        "NATM1",
+        "NATM2",
+        "NATM3",
+        "VARF0",
+        "VARF1",
+        "VARF2",
+        "VARF3",
+        "VARF4",
+        "VARM0",
+        "VARM1",
+        "VARM2",
+        "VARM3",
+        "VARM4",
+    ]
+
+    DEFAULT_INTERVIEWER_PROMPT = """You are a professional job interviewer. You are conducting a structured interview for the following position:
+
+{job_description}
+
+Your role:
+- Ask clear, relevant interview questions one at a time
+- Listen carefully to the candidate's response
+- Follow up with probing questions when appropriate
+- Be professional, warm, and encouraging
+- Keep your responses concise (2-3 sentences max)
+- Focus on assessing the candidate's skills, experience, and cultural fit
+
+Current interview context:
+{context}
+"""
+
+    def __init__(self, job_description: str, voice: str = "NATF2"):
+        self.fal_key = os.environ.get("FAL_KEY", "")
+        if not self.fal_key:
+            raise ValueError(
+                "FAL_KEY environment variable is required for voice interviews"
+            )
+
+        self.job_description = job_description
+        self.voice = voice if voice in self.VOICES else "NATF2"
+        self.conversation_history = []
+        self.headers = {
+            "Authorization": f"Key {self.fal_key}",
+            "Content-Type": "application/json",
+        }
+
+    def _build_prompt(self, context: str = "") -> str:
+        """Build the interviewer persona prompt with job context."""
+        return self.DEFAULT_INTERVIEWER_PROMPT.format(
+            job_description=self.job_description,
+            context=context
+            or "This is the start of the interview. Greet the candidate and ask your first question.",
+        )
+
+    def process_candidate_audio(self, audio_url: str, context: str = "") -> dict:
+        """
+        Process a candidate's audio response through PersonaPlex.
+
+        Args:
+            audio_url: URL to the candidate's audio file (WAV/MP3)
+            context: Additional context about the interview state
+
+        Returns:
+            dict with keys: audio_url, text, duration, transcript, error
+        """
+        # Build conversation context from history
+        history_context = ""
+        if self.conversation_history:
+            history_context = "Previous exchanges:\n"
+            for turn in self.conversation_history[-6:]:  # Last 3 exchanges
+                history_context += f"- {turn['role']}: {turn['text']}\n"
+
+        full_context = (
+            f"{history_context}\n{context}".strip() if context else history_context
+        )
+
+        prompt = self._build_prompt(full_context if full_context else "")
+
+        payload = {
+            "audio_url": audio_url,
+            "prompt": prompt,
+            "voice": self.voice,
+            "temperature_audio": 0.7,
+            "temperature_text": 0.8,
+        }
+
+        try:
+            # Submit to FAL queue
+            response = requests.post(
+                self.FAL_ENDPOINT,
+                json=payload,
+                headers=self.headers,
+                timeout=60,
+            )
+
+            if response.status_code != 200:
+                return {
+                    "error": f"FAL API error: {response.status_code} - {response.text}",
+                    "audio_url": None,
+                    "text": None,
+                    "duration": None,
+                }
+
+            result = response.json()
+
+            # Extract response data
+            audio_output = result.get("audio", {})
+            response_text = result.get("text", "")
+
+            # Track conversation
+            if response_text:
+                # We don't have the candidate's transcript from PersonaPlex directly,
+                # but we track the AI's response
+                self.conversation_history.append(
+                    {
+                        "role": "interviewer",
+                        "text": response_text,
+                    }
+                )
+
+            return {
+                "audio_url": audio_output.get("url")
+                if isinstance(audio_output, dict)
+                else None,
+                "text": response_text,
+                "duration": result.get("duration"),
+                "seed": result.get("seed"),
+                "error": None,
+            }
+
+        except requests.Timeout:
+            return {
+                "error": "Voice processing timed out. Please try again.",
+                "audio_url": None,
+                "text": None,
+                "duration": None,
+            }
+        except Exception as e:
+            return {
+                "error": f"Voice processing error: {str(e)}",
+                "audio_url": None,
+                "text": None,
+                "duration": None,
+            }
+
+    def add_candidate_transcript(self, text: str):
+        """Manually add a candidate's transcript to conversation history."""
+        self.conversation_history.append(
+            {
+                "role": "candidate",
+                "text": text,
+            }
+        )
+
+    def get_conversation_history(self) -> list:
+        """Return the full conversation history."""
+        return self.conversation_history
+
+    def evaluate_interview(self) -> dict:
+        """
+        Use LLM to evaluate the entire interview conversation.
+        Returns structured scores and feedback.
+        """
+        if not self.conversation_history:
+            return {"error": "No conversation history to evaluate"}
+
+        client = OpenAI(
+            base_url="https://fal.run/openrouter/router/openai/v1",
+            api_key="not-needed",
+            default_headers={
+                "Authorization": f"Key {self.fal_key}",
+            },
+        )
+
+        transcript = "\n".join(
+            f"{'Interviewer' if turn['role'] == 'interviewer' else 'Candidate'}: {turn['text']}"
+            for turn in self.conversation_history
+        )
+
+        eval_prompt = f"""Evaluate this job interview transcript for the following position:
+
+JOB DESCRIPTION:
+{self.job_description}
+
+INTERVIEW TRANSCRIPT:
+{transcript}
+
+Provide your evaluation as valid JSON with this exact structure:
+{{
+    "overall_score": 0-100,
+    "communication_score": 0-100,
+    "technical_score": 0-100,
+    "enthusiasm_score": 0-100,
+    "cultural_fit_score": 0-100,
+    "strengths": ["strength1", "strength2"],
+    "weaknesses": ["weakness1", "weakness2"],
+    "summary": "Brief evaluation summary...",
+    "recommendation": "hire" | "maybe" | "pass"
+}}
+"""
+
+        try:
+            response = client.chat.completions.create(
+                model="google/gemini-2.5-flash",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert interview evaluator. Respond only with valid JSON.",
+                    },
+                    {"role": "user", "content": eval_prompt},
+                ],
+            )
+
+            content = response.choices[0].message.content
+            # Strip markdown code fences if present
+            if content.strip().startswith("```"):
+                content = content.strip()
+                content = content.removeprefix("```json").removeprefix("```")
+                content = content.removesuffix("```")
+                content = content.strip()
+
+            return json.loads(content)
+        except json.JSONDecodeError:
+            return {
+                "overall_score": 50,
+                "summary": content if content else "Could not parse evaluation",
+                "recommendation": "maybe",
+            }
+        except Exception as e:
+            return {"error": f"Evaluation failed: {str(e)}"}

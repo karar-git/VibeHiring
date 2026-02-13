@@ -14,6 +14,7 @@ export interface Job {
   title: string;
   description: string;
   status: string;
+  isPublic: boolean;
   createdAt: string | null;
   updatedAt: string | null;
   userId: string | null;
@@ -63,4 +64,44 @@ export interface UserSubscription {
   plan: string;
   cvCount: number | null;
   lastReset: string | null;
+}
+
+export interface Application {
+  id: number;
+  jobId: number;
+  applicantName: string;
+  applicantEmail: string;
+  resumeUrl: string | null;
+  coverLetter: string | null;
+  status: string;
+  createdAt: string | null;
+}
+
+export interface InterviewEvaluation {
+  overall_score?: number;
+  communication_score?: number;
+  technical_score?: number;
+  enthusiasm_score?: number;
+  cultural_fit_score?: number;
+  strengths?: string[];
+  weaknesses?: string[];
+  summary?: string;
+  recommendation?: "hire" | "maybe" | "pass";
+}
+
+export interface Interview {
+  id: number;
+  jobId: number;
+  candidateId: number | null;
+  applicationId: number | null;
+  sessionId: string;
+  status: string;
+  voice: string | null;
+  conversation: Array<{ role: string; text: string }> | null;
+  evaluation: InterviewEvaluation | null;
+  overallScore: number | null;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  createdAt: string | null;
+  userId: string | null;
 }

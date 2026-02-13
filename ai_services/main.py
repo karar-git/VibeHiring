@@ -1,12 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from ai import Analyzer, DocumentTextExtractor
+from ai import Analyzer, DocumentTextExtractor, VoiceInterviewer
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
 CORS(app)
+
+# In-memory session store for active voice interviews
+# In production, use Redis or similar
+_interview_sessions: dict[str, VoiceInterviewer] = {}
 
 
 @app.route("/analyze", methods=["POST"])
@@ -86,6 +90,150 @@ def analyze_text():
                 "result": result,
                 "cv_text": cv_text,
                 "github_url": github_url,
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Voice Interview Endpoints ───
+
+
+@app.route("/interview/start", methods=["POST"])
+def start_interview():
+    """Start a new AI voice interview session."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        job_description = data.get("job_description", "").strip()
+        session_id = data.get("session_id", "").strip()
+        voice = data.get("voice", "NATF2")
+
+        if not job_description:
+            return jsonify({"error": "job_description is required"}), 400
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+
+        # Create a new interview session
+        interviewer = VoiceInterviewer(job_description, voice=voice)
+        _interview_sessions[session_id] = interviewer
+
+        return jsonify(
+            {
+                "session_id": session_id,
+                "status": "started",
+                "voice": interviewer.voice,
+                "message": "Interview session created. Send candidate audio to /interview/respond.",
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/interview/respond", methods=["POST"])
+def interview_respond():
+    """Process a candidate's audio response and get AI interviewer's reply."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        session_id = data.get("session_id", "").strip()
+        audio_url = data.get("audio_url", "").strip()
+        candidate_text = data.get("candidate_text", "").strip()
+
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+        if not audio_url:
+            return jsonify({"error": "audio_url is required"}), 400
+
+        interviewer = _interview_sessions.get(session_id)
+        if not interviewer:
+            return jsonify(
+                {"error": "Interview session not found. Start one first."}
+            ), 404
+
+        # If we have the candidate's text transcript, add it to history
+        if candidate_text:
+            interviewer.add_candidate_transcript(candidate_text)
+
+        # Process audio through PersonaPlex
+        result = interviewer.process_candidate_audio(audio_url)
+
+        return jsonify(
+            {
+                "session_id": session_id,
+                "interviewer_audio_url": result.get("audio_url"),
+                "interviewer_text": result.get("text"),
+                "duration": result.get("duration"),
+                "error": result.get("error"),
+                "turn_count": len(interviewer.conversation_history),
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/interview/evaluate", methods=["POST"])
+def interview_evaluate():
+    """Evaluate the completed interview and return scores."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        session_id = data.get("session_id", "").strip()
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+
+        interviewer = _interview_sessions.get(session_id)
+        if not interviewer:
+            return jsonify({"error": "Interview session not found."}), 404
+
+        evaluation = interviewer.evaluate_interview()
+        conversation = interviewer.get_conversation_history()
+
+        # Clean up session after evaluation
+        del _interview_sessions[session_id]
+
+        return jsonify(
+            {
+                "session_id": session_id,
+                "evaluation": evaluation,
+                "conversation": conversation,
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/interview/history", methods=["POST"])
+def interview_history():
+    """Get the conversation history for an active interview session."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        session_id = data.get("session_id", "").strip()
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+
+        interviewer = _interview_sessions.get(session_id)
+        if not interviewer:
+            return jsonify({"error": "Interview session not found."}), 404
+
+        return jsonify(
+            {
+                "session_id": session_id,
+                "conversation": interviewer.get_conversation_history(),
+                "turn_count": len(interviewer.conversation_history),
             }
         ), 200
 

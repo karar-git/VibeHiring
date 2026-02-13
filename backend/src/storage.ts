@@ -1,6 +1,6 @@
-import { candidates, jobs, userSubscriptions, users, type User } from "../shared/schema.js";
+import { candidates, jobs, userSubscriptions, users, applications, interviews, type User } from "../shared/schema.js";
 import { db } from "./db.js";
-import { eq, desc, count, avg } from "drizzle-orm";
+import { eq, desc, count, avg, and } from "drizzle-orm";
 
 export class DatabaseStorage {
   // Auth
@@ -43,7 +43,7 @@ export class DatabaseStorage {
       .orderBy(desc(jobs.createdAt));
   }
 
-  async updateJob(id: number, data: { title?: string; description?: string; status?: string }) {
+  async updateJob(id: number, data: { title?: string; description?: string; status?: string; isPublic?: boolean }) {
     const [updated] = await db
       .update(jobs)
       .set({ ...data, updatedAt: new Date() })
@@ -145,6 +145,114 @@ export class DatabaseStorage {
         .set({ cvCount: (sub.cvCount || 0) + 1 })
         .where(eq(userSubscriptions.userId, userId));
     }
+  }
+
+  // Applications (public job applications)
+  async createApplication(application: any) {
+    const [newApp] = await db.insert(applications).values(application).returning();
+    return newApp;
+  }
+
+  async getApplication(id: number) {
+    const [app] = await db.select().from(applications).where(eq(applications.id, id));
+    return app;
+  }
+
+  async listApplicationsByJob(jobId: number) {
+    return db
+      .select()
+      .from(applications)
+      .where(eq(applications.jobId, jobId))
+      .orderBy(desc(applications.createdAt));
+  }
+
+  async getApplicationCountByJob(jobId: number) {
+    const rows = await db
+      .select({ count: count() })
+      .from(applications)
+      .where(eq(applications.jobId, jobId));
+    return rows[0]?.count || 0;
+  }
+
+  async updateApplicationStatus(id: number, status: string) {
+    const [updated] = await db
+      .update(applications)
+      .set({ status })
+      .where(eq(applications.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteApplication(id: number) {
+    await db.delete(applications).where(eq(applications.id, id));
+  }
+
+  // Interviews (AI voice interviews)
+  async createInterview(interview: any) {
+    const [newInterview] = await db.insert(interviews).values(interview).returning();
+    return newInterview;
+  }
+
+  async getInterview(id: number) {
+    const [interview] = await db.select().from(interviews).where(eq(interviews.id, id));
+    return interview;
+  }
+
+  async getInterviewBySessionId(sessionId: string) {
+    const [interview] = await db.select().from(interviews).where(eq(interviews.sessionId, sessionId));
+    return interview;
+  }
+
+  async listInterviewsByJob(jobId: number) {
+    return db
+      .select()
+      .from(interviews)
+      .where(eq(interviews.jobId, jobId))
+      .orderBy(desc(interviews.createdAt));
+  }
+
+  async listInterviewsByUser(userId: string) {
+    return db
+      .select()
+      .from(interviews)
+      .where(eq(interviews.userId, userId))
+      .orderBy(desc(interviews.createdAt));
+  }
+
+  async updateInterview(id: number, data: Partial<{
+    status: string;
+    conversation: any[];
+    evaluation: Record<string, any>;
+    overallScore: number;
+    completedAt: Date;
+  }>) {
+    const [updated] = await db
+      .update(interviews)
+      .set(data)
+      .where(eq(interviews.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteInterview(id: number) {
+    await db.delete(interviews).where(eq(interviews.id, id));
+  }
+
+  // Public jobs (for job board)
+  async listPublicJobs() {
+    return db
+      .select()
+      .from(jobs)
+      .where(and(eq(jobs.isPublic, true), eq(jobs.status, "open")))
+      .orderBy(desc(jobs.createdAt));
+  }
+
+  async getPublicJob(id: number) {
+    const [job] = await db
+      .select()
+      .from(jobs)
+      .where(and(eq(jobs.id, id), eq(jobs.isPublic, true), eq(jobs.status, "open")));
+    return job;
   }
 }
 

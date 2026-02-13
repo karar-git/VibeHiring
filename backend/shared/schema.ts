@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, serial, integer, timestamp, varchar } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, serial, integer, timestamp, varchar, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { randomUUID } from "crypto";
@@ -21,6 +21,7 @@ export const jobs = pgTable("jobs", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   status: text("status").notNull().default("open"), // open, closed, archived
+  isPublic: boolean("is_public").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   userId: varchar("user_id").references(() => users.id),
@@ -62,6 +63,36 @@ export const userSubscriptions = pgTable("user_subscriptions", {
   lastReset: timestamp("last_reset").defaultNow(),
 });
 
+// Applications Table (public candidates applying to public jobs)
+export const applications = pgTable("applications", {
+  id: serial("id").primaryKey(),
+  jobId: integer("job_id").notNull().references(() => jobs.id),
+  applicantName: text("applicant_name").notNull(),
+  applicantEmail: text("applicant_email").notNull(),
+  resumeUrl: text("resume_url"),
+  coverLetter: text("cover_letter"),
+  status: text("status").notNull().default("pending"), // pending, reviewed, shortlisted, rejected
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Interviews Table (AI voice interviews)
+export const interviews = pgTable("interviews", {
+  id: serial("id").primaryKey(),
+  jobId: integer("job_id").notNull().references(() => jobs.id),
+  candidateId: integer("candidate_id").references(() => candidates.id),
+  applicationId: integer("application_id").references(() => applications.id),
+  sessionId: varchar("session_id").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed, cancelled
+  voice: varchar("voice").default("NATF2"),
+  conversation: jsonb("conversation").$type<any[]>(),
+  evaluation: jsonb("evaluation").$type<Record<string, any>>(),
+  overallScore: integer("overall_score"),
+  scheduledAt: timestamp("scheduled_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  userId: varchar("user_id").references(() => users.id),
+});
+
 // Zod Schemas
 export const insertJobSchema = createInsertSchema(jobs).omit({
   id: true,
@@ -89,6 +120,21 @@ export const insertSubscriptionSchema = createInsertSchema(userSubscriptions).om
   lastReset: true,
 });
 
+export const insertApplicationSchema = createInsertSchema(applications).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export const insertInterviewSchema = createInsertSchema(interviews).omit({
+  id: true,
+  createdAt: true,
+  conversation: true,
+  evaluation: true,
+  overallScore: true,
+  completedAt: true,
+});
+
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -108,3 +154,7 @@ export type InsertJob = z.infer<typeof insertJobSchema>;
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type Application = typeof applications.$inferSelect;
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+export type Interview = typeof interviews.$inferSelect;
+export type InsertInterview = z.infer<typeof insertInterviewSchema>;

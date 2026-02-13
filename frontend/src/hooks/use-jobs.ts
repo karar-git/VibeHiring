@@ -52,7 +52,7 @@ export function useCreateJob() {
 export function useUpdateJob() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: number; title?: string; description?: string; status?: string }) => {
+    mutationFn: async ({ id, ...data }: { id: number; title?: string; description?: string; status?: string; isPublic?: boolean }) => {
       const res = await apiFetch(`/api/jobs/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

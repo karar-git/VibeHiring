@@ -8,7 +8,9 @@ import {
   LogOut, 
   Menu,
   X,
-  Briefcase
+  Briefcase,
+  Mic,
+  Globe
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,8 @@ export function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Jobs", href: "/jobs", icon: Briefcase },
+    { name: "Interviews", href: "/interviews", icon: Mic },
+    { name: "Job Board", href: "/board", icon: Globe },
     { name: "Subscription", href: "/subscription", icon: CreditCard },
   ];
 

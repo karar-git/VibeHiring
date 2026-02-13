@@ -74,6 +74,41 @@ async function runMigrations() {
       ALTER TABLE "candidates" ADD COLUMN IF NOT EXISTS "job_id" integer REFERENCES "jobs"("id");
       ALTER TABLE "candidates" ADD COLUMN IF NOT EXISTS "category_scores" jsonb;
       ALTER TABLE "candidates" DROP COLUMN IF EXISTS "job_description";
+      ALTER TABLE "jobs" ADD COLUMN IF NOT EXISTS "is_public" boolean NOT NULL DEFAULT false;
+    `);
+
+    // Create applications table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "applications" (
+        "id" serial PRIMARY KEY,
+        "job_id" integer NOT NULL REFERENCES "jobs"("id"),
+        "applicant_name" text NOT NULL,
+        "applicant_email" text NOT NULL,
+        "resume_url" text,
+        "cover_letter" text,
+        "status" text NOT NULL DEFAULT 'pending',
+        "created_at" timestamp DEFAULT now()
+      );
+    `);
+
+    // Create interviews table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "interviews" (
+        "id" serial PRIMARY KEY,
+        "job_id" integer NOT NULL REFERENCES "jobs"("id"),
+        "candidate_id" integer REFERENCES "candidates"("id"),
+        "application_id" integer REFERENCES "applications"("id"),
+        "session_id" varchar NOT NULL UNIQUE,
+        "status" text NOT NULL DEFAULT 'pending',
+        "voice" varchar DEFAULT 'NATF2',
+        "conversation" jsonb,
+        "evaluation" jsonb,
+        "overall_score" integer,
+        "scheduled_at" timestamp,
+        "completed_at" timestamp,
+        "created_at" timestamp DEFAULT now(),
+        "user_id" varchar REFERENCES "users"("id")
+      );
     `);
     console.log("Database tables verified/created successfully");
   } catch (err) {

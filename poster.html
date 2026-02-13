@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page {
+    size: A1 portrait;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #0a0a0f;
+    color: #e4e4e7;
+    width: 594mm;
+    min-height: 841mm;
+    overflow: hidden;
+  }
+
+  .poster {
+    width: 100%;
+    min-height: 841mm;
+    padding: 40px 50px;
+    background: linear-gradient(170deg, #0a0a0f 0%, #0f0a1a 30%, #0a0a0f 60%, #0a0f14 100%);
+    position: relative;
+  }
+
+  /* Decorative background elements */
+  .poster::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .poster::after {
+    content: '';
+    position: absolute;
+    bottom: -150px;
+    left: -150px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .content { position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 2px solid rgba(124, 58, 237, 0.3);
+  }
+
+  .logo-group { display: flex; align-items: center; gap: 20px; }
+
+  .logo {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9, #4f46e5);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 900; color: white;
+    box-shadow: 0 10px 40px rgba(124, 58, 237, 0.4);
+    letter-spacing: -1px;
+  }
+
+  .brand-text h1 {
+    font-size: 52px; font-weight: 900;
+    background: linear-gradient(135deg, #e4e4e7, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -2px; line-height: 1;
+  }
+
+  .brand-text p {
+    font-size: 18px; color: #a1a1aa; font-weight: 500; margin-top: 4px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+
+  .header-right { text-align: right; }
+  .header-right .url {
+    font-size: 16px; color: #a78bfa; font-weight: 600;
+    background: rgba(124, 58, 237, 0.1); padding: 8px 18px; border-radius: 10px;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+  }
+  .header-right .tech-label {
+    font-size: 13px; color: #71717a; margin-top: 8px; font-weight: 500;
+  }
+
+  /* ── HERO TAGLINE ── */
+  .hero {
+    text-align: center;
+    margin: 25px 0 35px;
+    padding: 30px 40px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(59, 130, 246, 0.05));
+    border-radius: 24px;
+    border: 1px solid rgba(124, 58, 237, 0.15);
+  }
+
+  .hero h2 {
+    font-size: 38px; font-weight: 800; line-height: 1.2;
+    color: #fafafa; margin-bottom: 12px;
+  }
+  .hero h2 span {
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 18px; color: #a1a1aa; max-width: 700px; margin: 0 auto; line-height: 1.6;
+  }
+
+  /* ── SECTION TITLES ── */
+  .section-title {
+    font-size: 22px; font-weight: 800; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 12px;
+    text-transform: uppercase; letter-spacing: 2px; color: #d4d4d8;
+  }
+  .section-title .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.5);
+  }
+
+  /* ── GRID LAYOUTS ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: rgba(24, 24, 32, 0.8);
+    border: 1px solid rgba(63, 63, 70, 0.4);
+    border-radius: 18px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+  }
+
+  .card-highlight {
+    border-color: rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(24, 24, 32, 0.9));
+  }
+
+  .card h3 {
+    font-size: 18px; font-weight: 700; color: #fafafa;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
+  }
+
+  .card h3 .icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .icon-purple { background: rgba(124, 58, 237, 0.15); }
+  .icon-blue { background: rgba(59, 130, 246, 0.15); }
+  .icon-green { background: rgba(34, 197, 94, 0.15); }
+  .icon-orange { background: rgba(249, 115, 22, 0.15); }
+  .icon-pink { background: rgba(236, 72, 153, 0.15); }
+  .icon-cyan { background: rgba(6, 182, 212, 0.15); }
+
+  .card ul {
+    list-style: none; padding: 0;
+  }
+
+  .card li {
+    font-size: 14px; color: #a1a1aa; padding: 5px 0;
+    padding-left: 20px; position: relative; line-height: 1.5;
+  }
+
+  .card li::before {
+    content: '';
+    position: absolute; left: 0; top: 12px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #7c3aed;
+  }
+
+  .card p { font-size: 14px; color: #a1a1aa; line-height: 1.6; }
+
+  /* ── FLOW SECTION ── */
+  .flow-container {
+    display: flex;
+    gap: 0;
+    margin-bottom: 30px;
+    align-items: stretch;
+  }
+
+  .flow-step {
+    flex: 1;
+    text-align: center;
+    padding: 20px 14px;
+    background: rgba(24, 24, 32, 0.6);
+    border: 1px solid rgba(63, 63, 70, 0.3);
+    position: relative;
+  }
+
+  .flow-step:first-child { border-radius: 16px 0 0 16px; }
+  .flow-step:last-child { border-radius: 0 16px 16px 0; }
+
+  .flow-step .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: white; font-weight: 800; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .flow-step h4 { font-size: 13px; font-weight: 700; color: #e4e4e7; margin-bottom: 4px; }
+  .flow-step p { font-size: 11px; color: #71717a; line-height: 1.4; }
+
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: #7c3aed; font-size: 20px; font-weight: 900;
+    min-width: 30px;
+  }
+
+  /* ── TECH STACK BAR ── */
+  .tech-stack {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 30px;
+  }
+
+  .tech-badge {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(63, 63, 70, 0.4);
+    background: rgba(24, 24, 32, 0.8);
+    color: #d4d4d8;
+  }
+  .tech-badge.frontend { border-color: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+  .tech-badge.backend { border-color: rgba(34, 197, 94, 0.3); color: #86efac; }
+  .tech-badge.ai { border-color: rgba(168, 85, 247, 0.3); color: #c4b5fd; }
+  .tech-badge.infra { border-color: rgba(249, 115, 22, 0.3); color: #fdba74; }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-diagram {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; margin-bottom: 30px;
+    padding: 25px;
+    background: rgba(24, 24, 32, 0.5);
+    border-radius: 20px;
+    border: 1px solid rgba(63, 63, 70, 0.3);
+  }
+
+  .arch-box {
+    padding: 18px 22px;
+    border-radius: 14px;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .arch-box.fe {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+  .arch-box.be {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+  .arch-box.aisvc {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
+    border: 1px solid rgba(168, 85, 247, 0.3);
+  }
+  .arch-box.db {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05));
+    border: 1px solid rgba(249, 115, 22, 0.3);
+  }
+  .arch-box.ext {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(236, 72, 153, 0.05));
+    border: 1px solid rgba(236, 72, 153, 0.3);
+  }
+
+  .arch-box h4 { font-size: 14px; font-weight: 700; color: #fafafa; margin-bottom: 4px; }
+  .arch-box p { font-size: 11px; color: #a1a1aa; }
+
+  .arch-arrow { color: #52525b; font-size: 24px; font-weight: 900; }
+
+  /* ── PRICING TABLE ── */
+  .pricing { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+
+  .price-card {
+    background: rgba(24, 24, 32, 0.8);
+    border: 1px solid rgba(63, 63, 70, 0.4);
+    border-radius: 18px;
+    padding: 22px;
+    text-align: center;
+  }
+  .price-card.popular {
+    border-color: rgba(124, 58, 237, 0.5);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(24, 24, 32, 0.9));
+    position: relative;
+  }
+  .price-card.popular::before {
+    content: 'MOST POPULAR';
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: white; font-size: 10px; font-weight: 800; padding: 4px 14px;
+    border-radius: 20px; letter-spacing: 1px;
+  }
+
+  .price-card h4 { font-size: 20px; font-weight: 700; color: #fafafa; }
+  .price-card .price { font-size: 36px; font-weight: 900; color: #fafafa; margin: 8px 0; }
+  .price-card .price span { font-size: 14px; color: #71717a; font-weight: 500; }
+  .price-card ul { list-style: none; padding: 0; text-align: left; margin-top: 14px; }
+  .price-card li {
+    font-size: 12px; color: #a1a1aa; padding: 4px 0; padding-left: 18px;
+    position: relative;
+  }
+  .price-card li::before {
+    content: '\2713'; position: absolute; left: 0; color: #22c55e; font-weight: 700;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(63, 63, 70, 0.3);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer p { font-size: 13px; color: #52525b; }
+  .footer .team { font-size: 14px; color: #a1a1aa; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="poster">
+<div class="content">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-group">
+      <div class="logo">VH</div>
+      <div class="brand-text">
+        <h1>VibeHiring</h1>
+        <p>AI-Powered Recruitment</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="url">vibe-hiring-eight.vercel.app</div>
+      <div class="tech-label">github.com/karar-git/VibeHiring</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h2>Hire the Top 1% <span>Without the Noise</span></h2>
+    <p>An AI-powered recruitment platform that analyzes resumes against job descriptions, evaluates GitHub coding quality, and ranks candidates with transparent, explainable scoring across 6 skill dimensions.</p>
+  </div>
+
+  <!-- PROBLEM & SOLUTION -->
+  <div class="two-col">
+    <div class="card">
+      <h3><span class="icon icon-orange">!</span> The Problem</h3>
+      <ul>
+        <li>Manual resume screening is slow and biased toward keywords</li>
+        <li>No way to verify actual coding quality from a resume alone</li>
+        <li>Traditional ATS systems are opaque -- no explanation of rankings</li>
+        <li>Bulk candidate processing requires manual effort per candidate</li>
+        <li>Scanned/image-based resumes are ignored by most tools</li>
+      </ul>
+    </div>
+    <div class="card card-highlight">
+      <h3><span class="icon icon-green">&#10003;</span> Our Solution</h3>
+      <ul>
+        <li>AI agent autonomously analyzes CVs with contextual understanding</li>
+        <li>GitHub Vibe Coding Score detects AI-generated vs. human-written code</li>
+        <li>Transparent "Why This Rank?" explanations for every candidate</li>
+        <li>CSV bulk import with per-row AI analysis in a single upload</li>
+        <li>OCR fallback for scanned PDFs and image-based resumes</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- KEY FEATURES -->
+  <div class="section-title"><span class="dot"></span> Key Features</div>
+  <div class="three-col">
+    <div class="card">
+      <h3><span class="icon icon-purple">&#x1F9E0;</span> Agentic AI Analysis</h3>
+      <p>Powered by Gemini 2.5 with autonomous tool calling. The AI decides which tools to invoke (GitHub repos, coding analysis, profile stats, CV evaluation) in a loop until it has complete insight.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon icon-blue">&#x1F4CA;</span> 6-Axis Radar Scoring</h3>
+      <p>Each candidate is scored across Technical, Experience, Education, Soft Skills, Culture Fit, and Growth -- displayed as an interactive radar chart for instant visual comparison.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon icon-green">&#x1F50D;</span> Vibe Coding Detection</h3>
+      <p>Analyzes GitHub repositories to determine how much code is AI-generated vs. hand-written. Smart file sampling picks the 5 most meaningful source files per repo for accurate analysis.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon icon-pink">&#x1F517;</span> Auto GitHub Discovery</h3>
+      <p>Automatically extracts GitHub profile URLs from hyperlink annotations embedded in PDF resumes -- candidates don't need to manually specify their GitHub profiles.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon icon-cyan">&#x1F4C4;</span> Multi-Format Support</h3>
+      <p>Upload PDF, DOCX, or image files. Scanned PDFs automatically fall back to Tesseract OCR. CSV bulk import processes entire candidate batches with full AI analysis per row.</p>
+    </div>
+    <div class="card">
+      <h3><span class="icon icon-orange">&#x1F4AC;</span> Explainable Rankings</h3>
+      <p>Every candidate gets a "Why This Rank?" narrative and detailed AI summary. Full transparency into the scoring logic -- no black-box decisions.</p>
+    </div>
+  </div>
+
+  <!-- USER FLOW -->
+  <div class="section-title"><span class="dot"></span> User Flow</div>
+  <div class="flow-container">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <h4>Sign Up</h4>
+      <p>Register with email &amp; password</p>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <h4>Create Job</h4>
+      <p>Define title &amp; job description</p>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <h4>Upload CVs</h4>
+      <p>Single file or CSV bulk import</p>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <h4>AI Analyzes</h4>
+      <p>Extracts, scores &amp; ranks</p>
+    </div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <h4>Review &amp; Hire</h4>
+      <p>Radar charts, rankings &amp; insights</p>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="section-title"><span class="dot"></span> System Architecture</div>
+  <div class="arch-diagram">
+    <div class="arch-box fe">
+      <h4>Frontend</h4>
+      <p>React + Vite + shadcn/ui</p>
+      <p style="font-size:10px; color:#71717a; margin-top:4px;">Vercel</p>
+    </div>
+    <div class="arch-arrow">&#x2194;</div>
+    <div class="arch-box be">
+      <h4>Backend API</h4>
+      <p>Node.js + Express + Drizzle</p>
+      <p style="font-size:10px; color:#71717a; margin-top:4px;">Railway</p>
+    </div>
+    <div class="arch-arrow">&#x2194;</div>
+    <div class="arch-box aisvc">
+      <h4>AI Service</h4>
+      <p>Python + Flask + Gemini 2.5</p>
+      <p style="font-size:10px; color:#71717a; margin-top:4px;">Railway</p>
+    </div>
+    <div class="arch-arrow">&#x2194;</div>
+    <div class="arch-box ext">
+      <h4>External APIs</h4>
+      <p>GitHub API</p>
+      <p>VibeCodeDetector</p>
+    </div>
+  </div>
+  <div style="text-align:center; margin-top:-20px; margin-bottom:25px;">
+    <div class="arch-box db" style="display:inline-block; margin-top:10px;">
+      <h4>PostgreSQL</h4>
+      <p>Users, Jobs, Candidates, Subscriptions</p>
+      <p style="font-size:10px; color:#71717a; margin-top:4px;">Railway (managed)</p>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="section-title"><span class="dot"></span> Tech Stack</div>
+  <div class="tech-stack">
+    <span class="tech-badge frontend">React 18</span>
+    <span class="tech-badge frontend">TypeScript</span>
+    <span class="tech-badge frontend">Vite 7</span>
+    <span class="tech-badge frontend">Tailwind CSS</span>
+    <span class="tech-badge frontend">shadcn/ui</span>
+    <span class="tech-badge frontend">TanStack Query</span>
+    <span class="tech-badge frontend">Recharts</span>
+    <span class="tech-badge frontend">Framer Motion</span>
+    <span class="tech-badge backend">Node.js</span>
+    <span class="tech-badge backend">Express 5</span>
+    <span class="tech-badge backend">Drizzle ORM</span>
+    <span class="tech-badge backend">PostgreSQL</span>
+    <span class="tech-badge backend">JWT Auth</span>
+    <span class="tech-badge ai">Python / Flask</span>
+    <span class="tech-badge ai">Gemini 2.5 Flash</span>
+    <span class="tech-badge ai">Gemini 2.5 Pro</span>
+    <span class="tech-badge ai">Tesseract OCR</span>
+    <span class="tech-badge ai">PyMuPDF</span>
+    <span class="tech-badge infra">Vercel</span>
+    <span class="tech-badge infra">Railway</span>
+    <span class="tech-badge infra">GitHub API</span>
+  </div>
+
+  <!-- AI PIPELINE -->
+  <div class="section-title"><span class="dot"></span> AI Analysis Pipeline</div>
+  <div class="card" style="margin-bottom:30px;">
+    <h3><span class="icon icon-purple">&#x2699;</span> Dual-Model Agentic System with Tool Calling</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top:10px;">
+      <div>
+        <p style="color:#c4b5fd; font-weight:700; font-size:14px; margin-bottom:6px;">Gemini 2.5 Flash (Primary Agent)</p>
+        <ul>
+          <li>Autonomous tool-calling loop</li>
+          <li>Extracts skills, experience, education, projects</li>
+          <li>Invokes GitHub tools to fetch repos &amp; analyze code</li>
+          <li>Generates matching score, category scores &amp; summary</li>
+        </ul>
+      </div>
+      <div>
+        <p style="color:#93c5fd; font-weight:700; font-size:14px; margin-bottom:6px;">Gemini 2.5 Pro (Evaluator)</p>
+        <ul>
+          <li>Higher-accuracy model for CV-job matching</li>
+          <li>Evaluates: Skills Match, Experience Relevance, Education Fit</li>
+          <li>Returns overall_fit assessment &amp; calibrated matching_score</li>
+          <li>Called as a tool by the primary agent when needed</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:14px;">
+      <p style="color:#86efac; font-weight:700; font-size:14px; margin-bottom:6px;">Available AI Tools</p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <span class="tech-badge ai">github_repository_extractor</span>
+        <span class="tech-badge ai">vibe_coding_percentage_checker</span>
+        <span class="tech-badge ai">github_status_checker</span>
+        <span class="tech-badge ai">cv_appropriateness_evaluator</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div class="section-title"><span class="dot"></span> Subscription Plans</div>
+  <div class="pricing">
+    <div class="price-card">
+      <h4>Free</h4>
+      <div class="price">$0<span>/mo</span></div>
+      <ul>
+        <li>5 Resume Analyses / month</li>
+        <li>Basic Skills Extraction</li>
+        <li>Standard Support</li>
+      </ul>
+    </div>
+    <div class="price-card popular">
+      <h4>Pro</h4>
+      <div class="price">$29<span>/mo</span></div>
+      <ul>
+        <li>50 Resume Analyses / month</li>
+        <li>GitHub Vibe Coding Score</li>
+        <li>Detailed AI Summary</li>
+        <li>Priority Support</li>
+      </ul>
+    </div>
+    <div class="price-card">
+      <h4>Enterprise</h4>
+      <div class="price">$99<span>/mo</span></div>
+      <ul>
+        <li>Unlimited Analyses</li>
+        <li>Custom AI Models</li>
+        <li>API Access</li>
+        <li>Dedicated Account Manager</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>&copy; 2025 VibeHiring. All rights reserved.</p>
+    <div class="team">Built with React, Node.js, Python &amp; Gemini AI</div>
+    <p>vibe-hiring-eight.vercel.app</p>
+  </div>
+
+</div>
+</div>
+</body>
+</html>
