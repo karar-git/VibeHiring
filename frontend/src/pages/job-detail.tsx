@@ -2,6 +2,7 @@ import { useJob, useDeleteJob, useUpdateJob } from "@/hooks/use-jobs";
 import { useCandidatesByJob, useDeleteCandidate } from "@/hooks/use-candidates";
 import { useApplicationsByJob, useUpdateApplicationStatus, useDeleteApplication } from "@/hooks/use-applications";
 import { useInterviewsByJob, useCreateInterview } from "@/hooks/use-interviews";
+import { ChatWidget } from "@/components/chat-widget";
 import { Layout } from "@/components/layout";
 import { UploadDialog } from "@/components/upload-dialog";
 import { ImportCsvDialog } from "@/components/import-csv-dialog";
@@ -570,6 +571,7 @@ export default function JobDetailPage() {
           )}
         </div>
       </div>
+      <ChatWidget jobId={id} />
     </Layout>
   );
 }

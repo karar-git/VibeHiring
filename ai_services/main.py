@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from ai import Analyzer, DocumentTextExtractor, VoiceInterviewer
+from ai import Analyzer, ChatBot, DocumentTextExtractor, VoiceInterviewer
 import os
 from dotenv import load_dotenv
 
@@ -236,6 +236,33 @@ def interview_history():
                 "turn_count": len(interviewer.conversation_history),
             }
         ), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Chat Endpoint ───
+
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    """HR chatbot endpoint. Accepts a message and returns a reply."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        message = (data.get("message") or "").strip()
+        job_id = data.get("job_id")
+        history = data.get("history", [])
+
+        if not message:
+            return jsonify({"error": "message is required"}), 400
+
+        bot = ChatBot(job_id=job_id or 0)
+        reply = bot.reply(message, history)
+
+        return jsonify({"reply": reply}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -558,6 +558,21 @@ class Analyzer:
             return {"overall_fit": content, "matching_score": 50}
 
 
+class ChatBot:
+    """
+    Placeholder chatbot for HR users.
+    TODO: Replace with real AI implementation (RAG over job candidates, etc.)
+    """
+
+    def __init__(self, job_id: int, job_description: str = ""):
+        self.job_id = job_id
+        self.job_description = job_description
+
+    def reply(self, message: str, history: list | None = None) -> str:
+        """Return a placeholder reply. Replace this with real AI logic."""
+        return "hello"
+
+
 class VoiceInterviewer:
     """
     AI Voice Interview engine using FAL.ai's PersonaPlex audio-to-audio model.

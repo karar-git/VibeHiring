@@ -607,6 +607,42 @@ export function registerRoutes(app: Express): void {
     res.json(apps);
   });
 
+  // ─── HR Chatbot (proxy to AI service) ───
+  app.post("/api/jobs/:jobId/chat", requireAuth, async (req, res) => {
+    const jobId = Number(req.params.jobId);
+    const job = await storage.getJob(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    const { message, history } = req.body;
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ message: "message is required" });
+    }
+
+    try {
+      const aiResponse = await fetch(`${AI_SERVICE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          job_id: jobId,
+          history: history || [],
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errBody = await aiResponse.text();
+        return res.status(aiResponse.status).json({ message: errBody });
+      }
+
+      const result = await aiResponse.json();
+      res.json(result);
+    } catch (e: any) {
+      console.error("Error proxying chat to AI service:", e);
+      res.status(500).json({ message: "AI service unavailable" });
+    }
+  });
+
   // ─── Interviews API ───
   app.post("/api/jobs/:jobId/interviews", requireAuth, async (req, res) => {
     const userId = req.userId!;

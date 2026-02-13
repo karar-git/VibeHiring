@@ -19,7 +19,7 @@ export default function LandingPage() {
   const [, setLocation] = useLocation();
 
   if (!isLoading && user) {
-    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
+    setLocation(user.role === "applicant" ? "/home" : "/dashboard");
     return null;
   }
 

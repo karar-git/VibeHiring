@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [role, setRole] = useState<"hr" | "applicant">("hr");
 
   if (isAuthenticated && user) {
-    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
+    setLocation(user.role === "applicant" ? "/home" : "/dashboard");
     return null;
   }
 
@@ -31,7 +31,7 @@ export default function RegisterPage() {
         lastName: lastName || undefined,
         role,
       });
-      setLocation(result.user.role === "applicant" ? "/board" : "/dashboard");
+      setLocation(result.user.role === "applicant" ? "/home" : "/dashboard");
     } catch {
       // Error is available via registerMutation.error
     }
