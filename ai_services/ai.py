@@ -558,21 +558,6 @@ class Analyzer:
             return {"overall_fit": content, "matching_score": 50}
 
 
-class ChatBot:
-    """
-    Placeholder chatbot for HR users.
-    TODO: Replace with real AI implementation (RAG over job candidates, etc.)
-    """
-
-    def __init__(self, job_id: int, job_description: str = ""):
-        self.job_id = job_id
-        self.job_description = job_description
-
-    def reply(self, message: str, history: list | None = None) -> str:
-        """Return a placeholder reply. Replace this with real AI logic."""
-        return "hello"
-
-
 class VoiceInterviewer:
     """
     AI Voice Interview engine using FAL.ai's PersonaPlex audio-to-audio model.
@@ -819,3 +804,35 @@ Provide your evaluation as valid JSON with this exact structure:
             }
         except Exception as e:
             return {"error": f"Evaluation failed: {str(e)}"}
+
+
+class ChatBot:
+    """
+    Chatbot for HR users.
+    Modify this class to implement your own AI logic (RAG, LLM chain, etc.)
+    without touching the rest of the codebase.
+
+    The /chat endpoint in main.py calls ChatBot(job_id, job_description).reply(message, history).
+    """
+
+    def __init__(self, job_id: int, job_description: str = ""):
+        self.job_id = job_id
+        self.job_description = job_description
+
+    def reply(self, message: str, history: list | None = None) -> str:
+        """
+        Return a reply to the HR user's message.
+
+        Args:
+            message: The HR user's message text.
+            history: List of previous messages [{"role": "user"|"bot", "text": "..."}].
+
+        Returns:
+            The bot's reply string.
+
+        Replace this method with your own AI logic. For example:
+            - Use OpenAI/Gemini to answer questions about the job's candidates
+            - Implement RAG over candidate CVs
+            - Provide hiring recommendations
+        """
+        return "hello"

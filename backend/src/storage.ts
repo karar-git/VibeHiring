@@ -1,6 +1,6 @@
 import { candidates, jobs, userSubscriptions, users, applications, interviews, type User } from "../shared/schema.js";
 import { db } from "./db.js";
-import { eq, desc, count, avg, and } from "drizzle-orm";
+import { eq, desc, count, avg, and, sql } from "drizzle-orm";
 
 export class DatabaseStorage {
   // Auth
@@ -300,6 +300,30 @@ export class DatabaseStorage {
       .from(jobs)
       .where(and(eq(jobs.id, id), eq(jobs.isPublic, true), eq(jobs.status, "open")));
     return job;
+  }
+
+  // Public stats for landing page
+  async getPublicStats() {
+    const [acceptedResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(applications)
+      .where(eq(applications.status, "accepted"));
+
+    const [interviewsResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(interviews)
+      .where(eq(interviews.status, "completed"));
+
+    const [jobsResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(jobs)
+      .where(eq(jobs.isPublic, true));
+
+    return {
+      acceptedCount: acceptedResult?.count || 0,
+      completedInterviews: interviewsResult?.count || 0,
+      publicJobs: jobsResult?.count || 0,
+    };
   }
 }
 

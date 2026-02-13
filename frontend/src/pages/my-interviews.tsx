@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout";
 import { useMyInterviews } from "@/hooks/use-interviews";
-import { Loader2, Mic, Clock, CheckCircle2, AlertCircle, Briefcase } from "lucide-react";
+import { Loader2, Mic, Clock, CheckCircle2, AlertCircle, Briefcase, Play } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +82,7 @@ export default function MyInterviewsPage() {
             </p>
             {interviews.map((item, i) => {
               const config = getConfig(item.interview.status);
+              const canStart = item.interview.status === "pending" || item.interview.status === "in_progress";
               return (
                 <motion.div
                   key={item.interview.id}
@@ -161,6 +162,25 @@ export default function MyInterviewsPage() {
                           ).toLocaleString()}
                         </p>
                       )}
+                    </div>
+
+                    {/* Action button */}
+                    <div className="flex-shrink-0">
+                      {canStart ? (
+                        <Link href={`/my-interviews/${item.interview.id}`}>
+                          <Button size="sm" className="rounded-full gap-2">
+                            <Play className="size-4" />
+                            {item.interview.status === "in_progress" ? "Continue" : "Start Interview"}
+                          </Button>
+                        </Link>
+                      ) : item.interview.status === "completed" ? (
+                        <Link href={`/my-interviews/${item.interview.id}`}>
+                          <Button size="sm" variant="outline" className="rounded-full gap-2">
+                            <CheckCircle2 className="size-4" />
+                            View Results
+                          </Button>
+                        </Link>
+                      ) : null}
                     </div>
                   </div>
                 </motion.div>

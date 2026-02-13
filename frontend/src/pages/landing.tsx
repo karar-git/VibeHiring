@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { 
   CheckCircle2, 
   Check,
@@ -14,12 +15,28 @@ import {
   Users
 } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 export default function LandingPage() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  const { data: platformStats } = useQuery<{
+    acceptedCount: number;
+    completedInterviews: number;
+    publicJobs: number;
+  }>({
+    queryKey: ["/api/public/stats"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/public/stats`);
+      if (!res.ok) return { acceptedCount: 0, completedInterviews: 0, publicJobs: 0 };
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
   if (!isLoading && user) {
-    setLocation(user.role === "applicant" ? "/home" : "/dashboard");
+    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
     return null;
   }
 
@@ -352,8 +369,8 @@ export default function LandingPage() {
                 <div className="grid grid-cols-3 gap-6">
                   {[
                     { value: "10x", label: "Faster screening" },
-                    { value: "95%", label: "Accuracy rate" },
-                    { value: "1K+", label: "Hiring managers" },
+                    { value: `${platformStats?.acceptedCount || 0}+`, label: "Candidates accepted" },
+                    { value: `${platformStats?.completedInterviews || 0}+`, label: "Interviews completed" },
                   ].map((stat, i) => (
                     <div key={i} className="text-center">
                       <div className="text-2xl font-bold font-display text-primary">{stat.value}</div>

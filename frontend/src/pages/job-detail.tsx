@@ -30,6 +30,7 @@ import {
   XCircle,
   Clock,
   Eye,
+  Star,
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -415,8 +416,10 @@ export default function JobDetailPage() {
                             <Badge
                               variant="outline"
                               className={`text-xs ${
-                                app.status === "shortlisted"
+                                app.status === "accepted"
                                   ? "bg-green-100 text-green-700 border-green-200"
+                                  : app.status === "shortlisted"
+                                  ? "bg-emerald-100 text-emerald-700 border-emerald-200"
                                   : app.status === "rejected"
                                   ? "bg-red-100 text-red-700 border-red-200"
                                   : app.status === "reviewed"
@@ -449,10 +452,21 @@ export default function JobDetailPage() {
                             variant="ghost"
                             size="icon"
                             className="text-green-600"
+                            title="Accept"
+                            onClick={() => handleAppStatus(app.id, "accepted")}
+                            disabled={app.status === "accepted"}
+                          >
+                            <CheckCircle2 className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-emerald-600"
+                            title="Shortlist"
                             onClick={() => handleAppStatus(app.id, "shortlisted")}
                             disabled={app.status === "shortlisted"}
                           >
-                            <CheckCircle2 className="size-4" />
+                            <Star className="size-4" />
                           </Button>
                           <Button
                             variant="ghost"

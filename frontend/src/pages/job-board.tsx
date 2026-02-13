@@ -43,7 +43,7 @@ export default function JobBoardPage() {
         </Link>
         <div className="flex items-center gap-4">
           {isAuthenticated && user?.role === "applicant" ? (
-            <Link href="/home">
+            <Link href="/my-applications">
               <Button variant="ghost" className="font-medium">
                 <FileText className="size-4 mr-2" />
                 My Applications

@@ -682,7 +682,7 @@ export function registerRoutes(app: Express): void {
     if (!job || job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
 
     const { status } = req.body;
-    if (!["pending", "reviewed", "shortlisted", "rejected"].includes(status)) {
+    if (!["pending", "reviewed", "shortlisted", "rejected", "accepted"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
@@ -714,6 +714,110 @@ export function registerRoutes(app: Express): void {
     const userId = req.userId!;
     const interviewsList = await storage.listInterviewsByApplicant(userId);
     res.json(interviewsList);
+  });
+
+  // ─── Applicant: Get single interview (must belong to applicant via application) ───
+  app.get("/api/my-interviews/:id", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+
+    // Verify the interview belongs to this applicant via applicationId
+    if (!interview.applicationId) return res.status(403).json({ message: "Forbidden" });
+    const application = await storage.getApplication(interview.applicationId);
+    if (!application || application.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+
+    res.json(interview);
+  });
+
+  // ─── Applicant: Respond to their own interview ───
+  app.post("/api/my-interviews/:id/respond", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+
+    // Verify ownership via applicationId -> applications.userId
+    if (!interview.applicationId) return res.status(403).json({ message: "Forbidden" });
+    const application = await storage.getApplication(interview.applicationId);
+    if (!application || application.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+
+    const { audio_url, candidate_text } = req.body;
+
+    try {
+      const aiResponse = await fetch(`${AI_SERVICE_URL}/interview/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: interview.sessionId,
+          audio_url,
+          candidate_text,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errBody = await aiResponse.text();
+        return res.status(aiResponse.status).json({ message: errBody });
+      }
+
+      const result = await aiResponse.json();
+
+      // Update interview status if needed
+      if (interview.status === "pending") {
+        await storage.updateInterview(interview.id, { status: "in_progress" });
+      }
+
+      res.json(result);
+    } catch (e: any) {
+      console.error("Error proxying applicant interview response:", e);
+      res.status(500).json({ message: "AI service unavailable" });
+    }
+  });
+
+  // ─── Applicant: Finish and evaluate their interview ───
+  app.post("/api/my-interviews/:id/evaluate", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const interview = await storage.getInterview(Number(req.params.id));
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+
+    if (!interview.applicationId) return res.status(403).json({ message: "Forbidden" });
+    const application = await storage.getApplication(interview.applicationId);
+    if (!application || application.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+
+    try {
+      const aiResponse = await fetch(`${AI_SERVICE_URL}/interview/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: interview.sessionId }),
+      });
+
+      if (!aiResponse.ok) {
+        const errBody = await aiResponse.text();
+        return res.status(aiResponse.status).json({ message: errBody });
+      }
+
+      const result = (await aiResponse.json()) as any;
+
+      // Save evaluation to database
+      await storage.updateInterview(interview.id, {
+        status: "completed",
+        conversation: result.conversation || [],
+        evaluation: result.evaluation || {},
+        overallScore: result.evaluation?.overall_score || null,
+        completedAt: new Date(),
+      });
+
+      const updated = await storage.getInterview(interview.id);
+      res.json(updated);
+    } catch (e: any) {
+      console.error("Error evaluating applicant interview:", e);
+      res.status(500).json({ message: "AI service unavailable" });
+    }
+  });
+
+  // ─── Public: Platform stats (accepted count for landing page) ───
+  app.get("/api/public/stats", async (_req, res) => {
+    const stats = await storage.getPublicStats();
+    res.json(stats);
   });
 
   // ─── HR Chatbot (proxy to AI service) ───

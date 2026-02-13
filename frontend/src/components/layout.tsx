@@ -11,8 +11,7 @@ import {
   Briefcase,
   Mic,
   Globe,
-  FileText,
-  Home
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,6 @@ export function Layout({ children }: LayoutProps) {
         { name: "Subscription", href: "/subscription", icon: CreditCard },
       ]
     : [
-        { name: "Home", href: "/home", icon: Home },
         { name: "Browse Jobs", href: "/board", icon: Globe },
         { name: "My Applications", href: "/my-applications", icon: FileText },
         { name: "My Interviews", href: "/my-interviews", icon: Mic },

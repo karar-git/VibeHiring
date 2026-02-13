@@ -16,7 +16,7 @@ import JobApplyPage from "@/pages/job-apply";
 import InterviewsPage from "@/pages/interviews";
 import MyApplicationsPage from "@/pages/my-applications";
 import MyInterviewsPage from "@/pages/my-interviews";
-import ApplicantHomePage from "@/pages/applicant-home";
+import InterviewRoomPage from "@/pages/interview-room";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -41,7 +41,7 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: Rea
 
   // If role restriction is specified, redirect unauthorized roles
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    setLocation(user.role === "applicant" ? "/home" : "/dashboard");
+    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
     return null;
   }
 
@@ -76,11 +76,11 @@ function Router() {
       </Route>
 
       {/* Applicant-only routes */}
-      <Route path="/home">
-        <ProtectedRoute component={ApplicantHomePage} allowedRoles={["applicant"]} />
-      </Route>
       <Route path="/my-applications">
         <ProtectedRoute component={MyApplicationsPage} allowedRoles={["applicant"]} />
+      </Route>
+      <Route path="/my-interviews/:id">
+        <ProtectedRoute component={InterviewRoomPage} allowedRoles={["applicant"]} />
       </Route>
       <Route path="/my-interviews">
         <ProtectedRoute component={MyInterviewsPage} allowedRoles={["applicant"]} />

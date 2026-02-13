@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   if (isAuthenticated && user) {
-    setLocation(user.role === "applicant" ? "/home" : "/dashboard");
+    setLocation(user.role === "applicant" ? "/board" : "/dashboard");
     return null;
   }
 
@@ -22,7 +22,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const result = await login({ email, password });
-      setLocation(result.user.role === "applicant" ? "/home" : "/dashboard");
+      setLocation(result.user.role === "applicant" ? "/board" : "/dashboard");
     } catch {
       // Error is available via loginMutation.error
     }
