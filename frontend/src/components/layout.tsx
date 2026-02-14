@@ -11,7 +11,8 @@ import {
   Briefcase,
   Mic,
   Globe,
-  FileText
+  FileText,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export function Layout({ children }: LayoutProps) {
         { name: "Browse Jobs", href: "/board", icon: Globe },
         { name: "My Applications", href: "/my-applications", icon: FileText },
         { name: "My Interviews", href: "/my-interviews", icon: Mic },
+        { name: "My Profile", href: "/profile", icon: UserCircle },
       ];
 
   const NavContent = () => (

@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 export function CreateJobDialog({ trigger }: { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
   const { mutate: createJob, isPending } = useCreateJob();
   const { toast } = useToast();
@@ -28,11 +29,12 @@ export function CreateJobDialog({ trigger }: { trigger?: React.ReactNode }) {
     if (!title || !description) return;
 
     createJob(
-      { title, description },
+      { title, description, company: company || undefined },
       {
         onSuccess: () => {
           setOpen(false);
           setTitle("");
+          setCompany("");
           setDescription("");
           toast({
             title: "Job created",
@@ -79,6 +81,19 @@ export function CreateJobDialog({ trigger }: { trigger?: React.ReactNode }) {
               className="rounded-xl"
               placeholder="e.g. Senior Frontend Developer"
               required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="company" className="text-xs font-semibold uppercase text-muted-foreground">
+              Company Name
+            </Label>
+            <Input
+              id="company"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              className="rounded-xl"
+              placeholder="e.g. Acme Inc."
             />
           </div>
 

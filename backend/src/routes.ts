@@ -174,11 +174,11 @@ export function registerRoutes(app: Express): void {
 
   app.post("/api/jobs", requireAuth, async (req, res) => {
     const userId = req.userId!;
-    const { title, description } = req.body;
+    const { title, description, company } = req.body;
     if (!title || !description) {
       return res.status(400).json({ message: "Title and description are required" });
     }
-    const newJob = await storage.createJob({ title, description, userId });
+    const newJob = await storage.createJob({ title, description, company, userId });
     res.status(201).json(newJob);
   });
 
@@ -187,8 +187,8 @@ export function registerRoutes(app: Express): void {
     if (!job) return res.status(404).json({ message: "Job not found" });
     if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
 
-    const { title, description, status, isPublic } = req.body;
-    const updated = await storage.updateJob(job.id, { title, description, status, isPublic });
+    const { title, description, status, isPublic, company } = req.body;
+    const updated = await storage.updateJob(job.id, { title, description, status, isPublic, company });
     res.json(updated);
   });
 
@@ -929,11 +929,111 @@ export function registerRoutes(app: Express): void {
       }
 
       const result = await aiResponse.json();
-      res.json(result);
+
+      // Execute any actions returned by the AI (e.g. delete candidates)
+      const executedActions: Array<{ type: string; candidate_id: number; candidate_name: string; success: boolean; error?: string }> = [];
+      if (result.actions && Array.isArray(result.actions)) {
+        for (const action of result.actions) {
+          if (action.type === "delete_candidate" && action.candidate_id) {
+            try {
+              // Verify candidate belongs to this job before deleting
+              const candidate = await storage.getCandidate(action.candidate_id);
+              if (candidate && candidate.jobId === jobId) {
+                await storage.deleteCandidate(action.candidate_id);
+                executedActions.push({
+                  type: "delete_candidate",
+                  candidate_id: action.candidate_id,
+                  candidate_name: action.candidate_name || candidate.name,
+                  success: true,
+                });
+              } else {
+                executedActions.push({
+                  type: "delete_candidate",
+                  candidate_id: action.candidate_id,
+                  candidate_name: action.candidate_name || "Unknown",
+                  success: false,
+                  error: "Candidate not found or does not belong to this job",
+                });
+              }
+            } catch (err: any) {
+              executedActions.push({
+                type: "delete_candidate",
+                candidate_id: action.candidate_id,
+                candidate_name: action.candidate_name || "Unknown",
+                success: false,
+                error: err.message,
+              });
+            }
+          }
+        }
+      }
+
+      res.json({ reply: result.reply, actions: executedActions });
     } catch (e: any) {
       console.error("Error proxying chat to AI service:", e);
       res.status(500).json({ message: "AI service unavailable" });
     }
+  });
+
+  // ─── Profile API ───
+  app.get("/api/profile", requireAuth, async (req, res) => {
+    const user = await storage.getUserById(req.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      profileImageUrl: user.profileImageUrl,
+      headline: user.headline,
+      bio: user.bio,
+      location: user.location,
+      phone: user.phone,
+      linkedinUrl: user.linkedinUrl,
+      githubUrl: user.githubUrl,
+      portfolioUrl: user.portfolioUrl,
+      workExperience: user.workExperience,
+      education: user.education,
+      skills: user.skills,
+      createdAt: user.createdAt,
+    });
+  });
+
+  app.patch("/api/profile", requireAuth, async (req, res) => {
+    const userId = req.userId!;
+    const {
+      firstName, lastName, headline, bio, location, phone,
+      linkedinUrl, githubUrl, portfolioUrl, workExperience,
+      education, skills, profileImageUrl,
+    } = req.body;
+
+    const updated = await storage.updateUser(userId, {
+      firstName, lastName, headline, bio, location, phone,
+      linkedinUrl, githubUrl, portfolioUrl, workExperience,
+      education, skills, profileImageUrl,
+    });
+
+    res.json({
+      id: updated.id,
+      email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      role: updated.role,
+      profileImageUrl: updated.profileImageUrl,
+      headline: updated.headline,
+      bio: updated.bio,
+      location: updated.location,
+      phone: updated.phone,
+      linkedinUrl: updated.linkedinUrl,
+      githubUrl: updated.githubUrl,
+      portfolioUrl: updated.portfolioUrl,
+      workExperience: updated.workExperience,
+      education: updated.education,
+      skills: updated.skills,
+      createdAt: updated.createdAt,
+    });
   });
 
   // ─── Interviews API ───

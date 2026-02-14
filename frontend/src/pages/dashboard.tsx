@@ -99,7 +99,7 @@ export default function DashboardPage() {
           </motion.div>
 
           <motion.div variants={item}>
-            <Card className="hover-card-effect border-border/60 bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
+            <Card className="hover-card-effect border-border/60 bg-gradient-to-br from-primary/5 to-blue-500/5 border-primary/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Current Plan</CardTitle>
                 <Zap className="h-4 w-4 text-primary" />

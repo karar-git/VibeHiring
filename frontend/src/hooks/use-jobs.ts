@@ -39,7 +39,7 @@ export function useJobStats() {
 export function useCreateJob() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { title: string; description: string }) => {
+    mutationFn: async (data: { title: string; description: string; company?: string }) => {
       const res = await apiRequest("POST", "/api/jobs", data);
       return res.json();
     },
@@ -52,7 +52,7 @@ export function useCreateJob() {
 export function useUpdateJob() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: number; title?: string; description?: string; status?: string; isPublic?: boolean }) => {
+    mutationFn: async ({ id, ...data }: { id: number; title?: string; description?: string; status?: string; isPublic?: boolean; company?: string }) => {
       const res = await apiFetch(`/api/jobs/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

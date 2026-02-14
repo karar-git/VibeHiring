@@ -25,6 +25,29 @@ export class DatabaseStorage {
     return user;
   }
 
+  async updateUser(id: string, data: Partial<{
+    firstName: string | null;
+    lastName: string | null;
+    profileImageUrl: string | null;
+    headline: string | null;
+    bio: string | null;
+    location: string | null;
+    phone: string | null;
+    linkedinUrl: string | null;
+    githubUrl: string | null;
+    portfolioUrl: string | null;
+    workExperience: any[] | null;
+    education: any[] | null;
+    skills: string[] | null;
+  }>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
   // Jobs
   async createJob(job: any) {
     const [newJob] = await db.insert(jobs).values(job).returning();
@@ -44,7 +67,7 @@ export class DatabaseStorage {
       .orderBy(desc(jobs.createdAt));
   }
 
-  async updateJob(id: number, data: { title?: string; description?: string; status?: string; isPublic?: boolean }) {
+  async updateJob(id: number, data: { title?: string; company?: string; description?: string; status?: string; isPublic?: boolean }) {
     const [updated] = await db
       .update(jobs)
       .set({ ...data, updatedAt: new Date() })

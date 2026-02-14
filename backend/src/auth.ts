@@ -133,6 +133,16 @@ export async function handleGetMe(req: Request, res: Response) {
       lastName: user.lastName,
       role: user.role,
       profileImageUrl: user.profileImageUrl,
+      headline: user.headline,
+      bio: user.bio,
+      location: user.location,
+      phone: user.phone,
+      linkedinUrl: user.linkedinUrl,
+      githubUrl: user.githubUrl,
+      portfolioUrl: user.portfolioUrl,
+      workExperience: user.workExperience,
+      education: user.education,
+      skills: user.skills,
       createdAt: user.createdAt,
     });
   } catch (error) {

@@ -17,6 +17,7 @@ import InterviewsPage from "@/pages/interviews";
 import MyApplicationsPage from "@/pages/my-applications";
 import MyInterviewsPage from "@/pages/my-interviews";
 import InterviewRoomPage from "@/pages/interview-room";
+import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -84,6 +85,9 @@ function Router() {
       </Route>
       <Route path="/my-interviews">
         <ProtectedRoute component={MyInterviewsPage} allowedRoles={["applicant"]} />
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute component={ProfilePage} allowedRoles={["applicant"]} />
       </Route>
 
       {/* Public routes (accessible to anyone) */}

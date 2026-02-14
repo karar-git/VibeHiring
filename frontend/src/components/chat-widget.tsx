@@ -9,16 +9,27 @@ import {
   User,
   Sparkles,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+interface ChatAction {
+  type: string;
+  candidate_id: number;
+  candidate_name: string;
+  success: boolean;
+  error?: string;
+}
 
 interface ChatMessage {
   role: "user" | "bot";
   content: string;
+  actions?: ChatAction[];
 }
 
 interface ChatWidgetProps {
@@ -29,7 +40,7 @@ const QUICK_PROMPTS = [
   "Top 3 candidates?",
   "Who has Python skills?",
   "Compare top candidates",
-  "Summarize all applicants",
+  "Who should we reject?",
 ];
 
 function MarkdownMessage({ content }: { content: string }) {
@@ -114,6 +125,7 @@ export function ChatWidget({ jobId }: ChatWidgetProps) {
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const queryClient = useQueryClient();
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -163,11 +175,18 @@ export function ChatWidget({ jobId }: ChatWidgetProps) {
         });
 
         const data = await res.json();
+        const actions: ChatAction[] = data.actions || [];
         const botMsg: ChatMessage = {
           role: "bot",
           content: data.reply || "No response",
+          actions: actions.length > 0 ? actions : undefined,
         };
         setMessages((prev) => [...prev, botMsg]);
+
+        // If any delete actions were executed, invalidate candidate queries
+        if (actions.some((a: ChatAction) => a.type === "delete_candidate" && a.success)) {
+          queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/candidates`] });
+        }
       } catch {
         setMessages((prev) => [
           ...prev,
@@ -301,7 +320,30 @@ export function ChatWidget({ jobId }: ChatWidgetProps) {
                       }`}
                     >
                       {msg.role === "bot" ? (
-                        <MarkdownMessage content={msg.content} />
+                        <>
+                          <MarkdownMessage content={msg.content} />
+                          {msg.actions && msg.actions.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-border/30 space-y-1.5">
+                              {msg.actions.map((action, ai) => (
+                                <div
+                                  key={ai}
+                                  className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg ${
+                                    action.success
+                                      ? "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+                                      : "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400"
+                                  }`}
+                                >
+                                  <Trash2 className="size-3 flex-shrink-0" />
+                                  <span>
+                                    {action.success
+                                      ? `Deleted "${action.candidate_name}"`
+                                      : `Failed to delete "${action.candidate_name}"${action.error ? `: ${action.error}` : ""}`}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       ) : (
                         msg.content
                       )}

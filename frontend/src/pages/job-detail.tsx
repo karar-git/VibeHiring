@@ -31,6 +31,7 @@ import {
   Clock,
   Eye,
   Star,
+  Building2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -179,6 +180,12 @@ export default function JobDetailPage() {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
+              {job.company && (
+                <span className="inline-flex items-center gap-1 mr-3">
+                  <Building2 className="size-3.5" />
+                  {job.company}
+                </span>
+              )}
               Created {format(new Date(job.createdAt || new Date()), "MMM d, yyyy")}
             </p>
           </div>

@@ -228,7 +228,7 @@ export default function CandidateDetailPage() {
           <div className="space-y-6">
             {/* Score Card */}
             <Card className="border-border/60 shadow-sm overflow-hidden">
-              <div className="h-2 bg-gradient-to-r from-primary to-purple-400" />
+              <div className="h-2 bg-gradient-to-r from-primary to-blue-400" />
               <CardHeader>
                 <CardTitle className="font-display">Overall Match</CardTitle>
               </CardHeader>
@@ -267,7 +267,7 @@ export default function CandidateDetailPage() {
                   <div className="mt-6 pt-6 border-t border-border/50">
                     <div className="flex justify-between text-sm mb-2">
                       <span className="font-medium">Vibe Coding Score</span>
-                      <span className="font-bold text-purple-600">{candidate.vibeCodingScore}/100</span>
+                      <span className="font-bold text-blue-600">{candidate.vibeCodingScore}/100</span>
                     </div>
                     <Progress value={candidate.vibeCodingScore} className="h-2" />
                     <p className="text-xs text-muted-foreground mt-2 text-left">

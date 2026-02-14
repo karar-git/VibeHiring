@@ -7,12 +7,39 @@ export interface User {
   lastName: string | null;
   role: "hr" | "applicant";
   profileImageUrl: string | null;
+  headline: string | null;
+  bio: string | null;
+  location: string | null;
+  phone: string | null;
+  linkedinUrl: string | null;
+  githubUrl: string | null;
+  portfolioUrl: string | null;
+  workExperience: WorkExperience[] | null;
+  education: Education[] | null;
+  skills: string[] | null;
   createdAt: string;
+}
+
+export interface WorkExperience {
+  company: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+export interface Education {
+  school: string;
+  degree: string;
+  field: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface Job {
   id: number;
   title: string;
+  company: string | null;
   description: string;
   status: string;
   isPublic: boolean;

@@ -15,7 +15,7 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 246 83% 60%;  /* Vivid Purple/Indigo */
+  --primary: 217 91% 60%;  /* Blue #3e83f6 */
   --primary-foreground: 210 40% 98%;
 
   --secondary: 210 40% 96%;
@@ -24,15 +24,15 @@
   --muted: 210 40% 96%;
   --muted-foreground: 215 16% 47%;
 
-  --accent: 262 83% 96%; /* Very light purple for backgrounds */
-  --accent-foreground: 246 83% 60%;
+  --accent: 217 91% 96%; /* Very light blue for backgrounds */
+  --accent-foreground: 217 91% 60%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
 
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 246 83% 60%;
+  --ring: 217 91% 60%;
 
   --radius: 0.75rem;
 
@@ -51,7 +51,7 @@
   --popover: 222 47% 11%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 246 83% 65%;
+  --primary: 217 91% 65%;
   --primary-foreground: 222 47% 11%;
 
   --secondary: 217 19% 27%;
@@ -60,7 +60,7 @@
   --muted: 217 19% 27%;
   --muted-foreground: 215 20% 65%;
 
-  --accent: 246 83% 20%;
+  --accent: 217 91% 20%;
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62% 30%;
@@ -68,7 +68,7 @@
 
   --border: 217 19% 27%;
   --input: 217 19% 27%;
-  --ring: 246 83% 65%;
+  --ring: 217 91% 65%;
 }
 
 @layer base {

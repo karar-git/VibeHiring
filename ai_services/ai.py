@@ -948,12 +948,15 @@ class ChatBot:
             parts.append(f"── Candidate {i} ──\n{self.candidate_to_text(c)}")
         return "\n\n".join(parts)
 
-    def reply(self, message: str, history: list | None = None) -> str:
+    def reply(self, message: str, history: list | None = None) -> dict:
         """
         RAG-powered reply:
         1. Retrieve top-K candidates relevant to the HR query
         2. Build context from their data
         3. Generate a grounded answer via LLM
+        4. Detect action intents (e.g. delete candidate) and return structured actions
+
+        Returns a dict: { "reply": str, "actions": list[dict] }
         """
         # If no candidates have embeddings, fall back to using all candidates as context
         has_embeddings = any(
@@ -969,6 +972,12 @@ class ChatBot:
 
         context = self._build_context(relevant)
         total_count = len(self.candidates_data)
+
+        # Build a lookup of all candidates by name (lowercase) and by id
+        candidate_lookup = {}
+        for c in self.candidates_data:
+            candidate_lookup[c.get("name", "").lower().strip()] = c
+            candidate_lookup[str(c.get("id", ""))] = c
 
         system_prompt = f"""You are an expert HR assistant for VibeHire. You help hiring managers find the right candidates.
 
@@ -989,7 +998,18 @@ RULES:
 - When comparing candidates, include their scores and key differentiators.
 - If asked about skills/experience, check the actual data fields, not just summaries.
 - ALWAYS include at least one piece of contact information (email or GitHub URL) for every candidate you mention, so the HR manager can reach out directly.
-- Format your responses with markdown: use **bold** for candidate names, bullet points for lists, and headers for sections when appropriate."""
+- Format your responses with markdown: use **bold** for candidate names, bullet points for lists, and headers for sections when appropriate.
+
+ACTION SYSTEM:
+You can perform actions when the HR manager explicitly asks. Currently supported actions:
+- DELETE CANDIDATE: When the user asks to delete/remove a candidate, include an ACTION line at the very end of your response.
+
+Format for delete actions (MUST be on its own line at the end, after your normal reply):
+ACTION: DELETE_CANDIDATE name="Exact Candidate Name"
+
+You can include multiple ACTION lines if asked to delete multiple candidates.
+IMPORTANT: Only include ACTION lines when the user EXPLICITLY asks to delete/remove a candidate. Never include them unprompted.
+IMPORTANT: Use the EXACT candidate name as it appears in the data."""
 
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -1008,8 +1028,52 @@ RULES:
                 model="google/gemini-2.5-flash",
                 messages=messages,
             )
-            return (
+            raw_reply = (
                 response.choices[0].message.content or "I couldn't generate a response."
             )
         except Exception as e:
-            return f"Sorry, I encountered an error: {str(e)}"
+            return {"reply": f"Sorry, I encountered an error: {str(e)}", "actions": []}
+
+        # Parse actions from the reply
+        actions = []
+        clean_lines = []
+        for line in raw_reply.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("ACTION: DELETE_CANDIDATE"):
+                # Extract candidate name from: ACTION: DELETE_CANDIDATE name="..."
+                import re
+
+                match = re.search(r'name="([^"]+)"', stripped)
+                if match:
+                    candidate_name = match.group(1)
+                    # Look up candidate by name
+                    candidate = candidate_lookup.get(candidate_name.lower().strip())
+                    if candidate:
+                        actions.append(
+                            {
+                                "type": "delete_candidate",
+                                "candidate_id": candidate["id"],
+                                "candidate_name": candidate.get("name", candidate_name),
+                            }
+                        )
+                    else:
+                        # Try fuzzy match - check if any candidate name contains the search term
+                        for name_key, c in candidate_lookup.items():
+                            if (
+                                candidate_name.lower() in name_key
+                                or name_key in candidate_name.lower()
+                            ):
+                                actions.append(
+                                    {
+                                        "type": "delete_candidate",
+                                        "candidate_id": c["id"],
+                                        "candidate_name": c.get("name", candidate_name),
+                                    }
+                                )
+                                break
+            else:
+                clean_lines.append(line)
+
+        clean_reply = "\n".join(clean_lines).strip()
+
+        return {"reply": clean_reply, "actions": actions}

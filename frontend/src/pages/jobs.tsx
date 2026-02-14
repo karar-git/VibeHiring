@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, Briefcase, Users, Trash2, Plus } from "lucide-react";
+import { Loader2, Search, Briefcase, Users, Trash2, Plus, Building2 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -129,6 +129,12 @@ function JobCard({
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">
             <h3 className="font-display font-bold text-lg leading-tight truncate">{job.title}</h3>
+            {job.company && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Building2 className="size-3" />
+                {job.company}
+              </p>
+            )}
             <Badge variant="outline" className={`text-[10px] font-bold ${getStatusColor(job.status)}`}>
               {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
             </Badge>

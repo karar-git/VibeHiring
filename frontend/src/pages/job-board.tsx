@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Briefcase, MapPin, Clock, ArrowRight, Search, FileText } from "lucide-react";
+import { Briefcase, MapPin, Clock, ArrowRight, Search, FileText, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,7 +26,8 @@ export default function JobBoardPage() {
   const filteredJobs = jobs?.filter(
     (job) =>
       job.title.toLowerCase().includes(search.toLowerCase()) ||
-      job.description.toLowerCase().includes(search.toLowerCase())
+      job.description.toLowerCase().includes(search.toLowerCase()) ||
+      (job.company && job.company.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -74,7 +75,7 @@ export default function JobBoardPage() {
           >
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
               Find Your Next{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
                 Dream Job
               </span>
             </h1>
@@ -133,6 +134,12 @@ export default function JobBoardPage() {
                           <h3 className="text-lg font-bold font-display group-hover:text-primary transition-colors">
                             {job.title}
                           </h3>
+                          {job.company && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Building2 className="size-3.5" />
+                              {job.company}
+                            </p>
+                          )}
                           <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
                             {job.description.slice(0, 200)}
                             {job.description.length > 200 ? "..." : ""}

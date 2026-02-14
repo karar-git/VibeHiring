@@ -12,6 +12,17 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   role: varchar("role").notNull().default("hr"), // "hr" | "applicant"
   profileImageUrl: varchar("profile_image_url"),
+  // Profile fields
+  headline: varchar("headline"),
+  bio: text("bio"),
+  location: varchar("location"),
+  phone: varchar("phone"),
+  linkedinUrl: varchar("linkedin_url"),
+  githubUrl: varchar("github_url"),
+  portfolioUrl: varchar("portfolio_url"),
+  workExperience: jsonb("work_experience").$type<any[]>(),
+  education: jsonb("education").$type<any[]>(),
+  skills: jsonb("skills").$type<string[]>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -20,6 +31,7 @@ export const users = pgTable("users", {
 export const jobs = pgTable("jobs", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  company: text("company"),
   description: text("description").notNull(),
   status: text("status").notNull().default("open"), // open, closed, archived
   isPublic: boolean("is_public").notNull().default(false),

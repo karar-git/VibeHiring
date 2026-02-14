@@ -266,9 +266,11 @@ def chat():
             job_description=job_description,
             candidates_data=candidates_data,
         )
-        reply = bot.reply(message, history)
+        result = bot.reply(message, history)
 
-        return jsonify({"reply": reply}), 200
+        return jsonify(
+            {"reply": result["reply"], "actions": result.get("actions", [])}
+        ), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

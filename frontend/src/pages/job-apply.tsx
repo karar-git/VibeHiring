@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Upload, Loader2, Building2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -170,7 +170,14 @@ export default function JobApplyPage() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-card border border-border/50 rounded-2xl p-6 mb-8"
         >
-          <h1 className="text-2xl font-display font-bold mb-3">{job.title}</h1>
+          <h1 className="text-2xl font-display font-bold mb-1">{job.title}</h1>
+          {job.company && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1 mb-3">
+              <Building2 className="size-4" />
+              {job.company}
+            </p>
+          )}
+          {!job.company && <div className="mb-3" />}
           <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
             {job.description}
           </p>

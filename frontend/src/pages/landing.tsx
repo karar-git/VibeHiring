@@ -87,7 +87,7 @@ export default function LandingPage() {
               </div>
               <h1 className="text-5xl md:text-6xl font-display font-bold leading-tight tracking-tight mb-6">
                 Hire the top 1% <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
                   without the noise.
                 </span>
               </h1>
@@ -125,7 +125,7 @@ export default function LandingPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="relative"
             >
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-purple-500/20 rounded-3xl blur-2xl -z-10" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-blue-500/20 rounded-3xl blur-2xl -z-10" />
               <div className="bg-card border border-border/50 rounded-3xl shadow-2xl p-6 relative overflow-hidden">
                 <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4">
                   <div className="flex items-center gap-3">
