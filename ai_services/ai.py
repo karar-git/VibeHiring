@@ -878,6 +878,8 @@ class ChatBot:
         parts = [f"Name: {c.get('name', 'Unknown')}"]
         if c.get("email"):
             parts.append(f"Email: {c['email']}")
+        if c.get("githubUrl"):
+            parts.append(f"GitHub: {c['githubUrl']}")
         if c.get("skills"):
             skills = c["skills"] if isinstance(c["skills"], list) else []
             parts.append(f"Skills: {', '.join(skills)}")
@@ -985,7 +987,9 @@ RULES:
 - If no candidates match the query, say so clearly.
 - Be concise and actionable. Use bullet points for lists.
 - When comparing candidates, include their scores and key differentiators.
-- If asked about skills/experience, check the actual data fields, not just summaries."""
+- If asked about skills/experience, check the actual data fields, not just summaries.
+- ALWAYS include at least one piece of contact information (email or GitHub URL) for every candidate you mention, so the HR manager can reach out directly.
+- Format your responses with markdown: use **bold** for candidate names, bullet points for lists, and headers for sections when appropriate."""
 
         messages = [{"role": "system", "content": system_prompt}]
 

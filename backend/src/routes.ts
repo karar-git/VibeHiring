@@ -898,6 +898,7 @@ export function registerRoutes(app: Express): void {
         id: c.id,
         name: c.name,
         email: c.email,
+        githubUrl: c.githubUrl,
         skills: c.skills,
         experience: c.experience,
         education: c.education,
