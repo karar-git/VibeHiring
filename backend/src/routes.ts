@@ -85,6 +85,47 @@ function parseCSV(text: string): string[][] {
   return rows;
 }
 
+// Generate an embedding for a candidate and store it in the DB (fire-and-forget safe)
+async function generateAndStoreEmbedding(candidateId: number, candidateText: string): Promise<void> {
+  try {
+    if (!candidateText || candidateText.trim().length < 20) return; // skip empty/too-short text
+    const resp = await fetch(`${AI_SERVICE_URL}/embed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: candidateText }),
+    });
+    if (!resp.ok) {
+      console.error(`Embedding service returned ${resp.status} for candidate ${candidateId}`);
+      return;
+    }
+    const data = (await resp.json()) as any;
+    if (data.embedding && Array.isArray(data.embedding)) {
+      await storage.updateCandidate(candidateId, { embedding: data.embedding });
+    }
+  } catch (e) {
+    console.error(`Failed to generate embedding for candidate ${candidateId}:`, e);
+  }
+}
+
+// Build a text representation of a candidate for embedding
+function buildCandidateEmbeddingText(candidate: {
+  name: string;
+  cvText?: string | null;
+  skills?: string[] | null;
+  experience?: any[] | null;
+  education?: any[] | null;
+  analysisSummary?: string | null;
+}): string {
+  const parts: string[] = [];
+  if (candidate.name) parts.push(`Name: ${candidate.name}`);
+  if (candidate.skills?.length) parts.push(`Skills: ${candidate.skills.join(", ")}`);
+  if (candidate.experience?.length) parts.push(`Experience: ${JSON.stringify(candidate.experience)}`);
+  if (candidate.education?.length) parts.push(`Education: ${JSON.stringify(candidate.education)}`);
+  if (candidate.analysisSummary) parts.push(`Summary: ${candidate.analysisSummary}`);
+  if (candidate.cvText) parts.push(candidate.cvText.slice(0, 3000)); // cap length
+  return parts.join("\n");
+}
+
 export function registerRoutes(app: Express): void {
   // ─── Auth Routes ───
   app.post("/api/auth/register", handleRegister);
@@ -280,6 +321,10 @@ export function registerRoutes(app: Express): void {
         ...analysis,
       });
 
+      // Generate embedding in background (don't block the response)
+      const embText = buildCandidateEmbeddingText(newCandidate);
+      generateAndStoreEmbedding(newCandidate.id, embText);
+
       await storage.incrementCvCount(userId);
 
       // Keep uploaded file for "View Original Resume" feature
@@ -430,7 +475,7 @@ export function registerRoutes(app: Express): void {
             analyzedCvText = sanitizeText(cvText);
           }
 
-          await storage.createCandidate({
+          const csvCandidate = await storage.createCandidate({
             name,
             email,
             resumeUrl: "",
@@ -440,6 +485,10 @@ export function registerRoutes(app: Express): void {
             jobId,
             ...analysis,
           });
+
+          // Generate embedding in background
+          const csvEmbText = buildCandidateEmbeddingText(csvCandidate);
+          generateAndStoreEmbedding(csvCandidate.id, csvEmbText);
 
           await storage.incrementCvCount(userId);
           results.imported++;
@@ -526,6 +575,12 @@ export function registerRoutes(app: Express): void {
         const token = authHeader.split(" ")[1];
         const payload = verifyToken(token);
         if (payload) userId = payload.userId;
+      }
+
+      // Prevent duplicate applications for the same job
+      const alreadyApplied = await storage.hasExistingApplication(jobId, applicantEmail, userId);
+      if (alreadyApplied) {
+        return res.status(409).json({ message: "You have already applied to this job" });
       }
 
       const file = req.file;
@@ -626,7 +681,7 @@ export function registerRoutes(app: Express): void {
             }
 
             // Create a candidate entry under the HR user who owns the job
-            await storage.createCandidate({
+            const autoCandidate = await storage.createCandidate({
               name: applicantName,
               email: applicantEmail || null,
               resumeUrl: resumeUrl || "",
@@ -636,6 +691,10 @@ export function registerRoutes(app: Express): void {
               jobId,
               ...analysis,
             });
+
+            // Generate embedding in background
+            const autoEmbText = buildCandidateEmbeddingText(autoCandidate);
+            generateAndStoreEmbedding(autoCandidate.id, autoEmbText);
 
             // Increment the HR user's CV count
             await storage.incrementCvCount(job.userId!);
@@ -820,7 +879,7 @@ export function registerRoutes(app: Express): void {
     res.json(stats);
   });
 
-  // ─── HR Chatbot (proxy to AI service) ───
+  // ─── HR Chatbot (proxy to AI service with RAG) ───
   app.post("/api/jobs/:jobId/chat", requireAuth, async (req, res) => {
     const jobId = Number(req.params.jobId);
     const job = await storage.getJob(jobId);
@@ -833,13 +892,33 @@ export function registerRoutes(app: Express): void {
     }
 
     try {
+      // Fetch all candidates for this job to pass to the RAG chatbot
+      const jobCandidates = await storage.listCandidatesByJob(jobId);
+      const candidatesPayload = jobCandidates.map((c) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        skills: c.skills,
+        experience: c.experience,
+        education: c.education,
+        projects: c.projects,
+        score: c.score,
+        vibeCodingScore: c.vibeCodingScore,
+        categoryScores: c.categoryScores,
+        analysisSummary: c.analysisSummary,
+        rankReason: c.rankReason,
+        embedding: c.embedding,
+      }));
+
       const aiResponse = await fetch(`${AI_SERVICE_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
           job_id: jobId,
+          job_description: job.description,
           history: history || [],
+          candidates: candidatesPayload,
         }),
       });
 

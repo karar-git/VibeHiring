@@ -41,9 +41,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/25">
-            <span className="text-white font-bold text-xl font-display">VH</span>
-          </div>
+          <img src="/logo.png" alt="VibeHire" className="size-10 rounded-xl object-contain" />
           <span className="font-display font-bold text-2xl tracking-tight">VibeHire</span>
         </div>
 

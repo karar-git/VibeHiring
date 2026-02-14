@@ -35,9 +35,7 @@ export default function JobBoardPage() {
       <header className="px-6 h-20 flex items-center justify-between max-w-7xl mx-auto w-full">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer">
-            <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm font-display">VH</span>
-            </div>
+            <img src="/logo.png" alt="VibeHire" className="size-8 rounded-lg object-contain" />
             <span className="font-display font-bold text-xl tracking-tight">VibeHire</span>
           </div>
         </Link>

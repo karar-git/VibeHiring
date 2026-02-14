@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import json
 import fitz
+import math
 
 
 class DocumentTextExtractor:
@@ -808,31 +809,203 @@ Provide your evaluation as valid JSON with this exact structure:
 
 class ChatBot:
     """
-    Chatbot for HR users.
-    Modify this class to implement your own AI logic (RAG, LLM chain, etc.)
-    without touching the rest of the codebase.
+    RAG-powered HR chatbot.
+    Uses FAL.ai embeddings (text-embedding-3-small) for retrieval and
+    Gemini for generation. Candidates data is passed in from the backend.
 
-    The /chat endpoint in main.py calls ChatBot(job_id, job_description).reply(message, history).
+    Flow:
+    1. Backend fetches all candidates for the job (with embeddings + metadata)
+    2. ChatBot embeds the HR query
+    3. Cosine similarity finds the top-K most relevant candidates
+    4. LLM generates a natural-language answer grounded in those candidates
     """
 
-    def __init__(self, job_id: int, job_description: str = ""):
+    def __init__(
+        self,
+        job_id: int,
+        job_description: str = "",
+        candidates_data: list | None = None,
+    ):
         self.job_id = job_id
         self.job_description = job_description
+        self.candidates_data = candidates_data or []
+
+        fal_key = os.environ.get("FAL_KEY", "")
+        self.embed_client = OpenAI(
+            base_url="https://fal.run/openrouter/router/openai/v1",
+            api_key="not-needed",
+            default_headers={"Authorization": f"Key {fal_key}"},
+        )
+        self.llm_client = OpenAI(
+            base_url="https://fal.run/openrouter/router/openai/v1",
+            api_key="not-needed",
+            default_headers={"Authorization": f"Key {fal_key}"},
+        )
+
+    # ── Embedding helpers ──
+
+    @staticmethod
+    def get_embedding(client, text: str) -> list[float]:
+        """Generate an embedding vector for a single text."""
+        response = client.embeddings.create(
+            model="openai/text-embedding-3-small",
+            input=text,
+        )
+        return response.data[0].embedding
+
+    @staticmethod
+    def get_embeddings_batch(client, texts: list[str]) -> list[list[float]]:
+        """Generate embedding vectors for multiple texts in one call."""
+        response = client.embeddings.create(
+            model="openai/text-embedding-3-small",
+            input=texts,
+        )
+        return [item.embedding for item in response.data]
+
+    @staticmethod
+    def cosine_similarity(a: list[float], b: list[float]) -> float:
+        """Compute cosine similarity between two vectors (no numpy needed)."""
+        dot = sum(x * y for x, y in zip(a, b))
+        norm_a = math.sqrt(sum(x * x for x in a))
+        norm_b = math.sqrt(sum(x * x for x in b))
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        return dot / (norm_a * norm_b)
+
+    @staticmethod
+    def candidate_to_text(c: dict) -> str:
+        """Convert a candidate dict into a searchable text representation."""
+        parts = [f"Name: {c.get('name', 'Unknown')}"]
+        if c.get("email"):
+            parts.append(f"Email: {c['email']}")
+        if c.get("skills"):
+            skills = c["skills"] if isinstance(c["skills"], list) else []
+            parts.append(f"Skills: {', '.join(skills)}")
+        if c.get("experience"):
+            exp = c["experience"] if isinstance(c["experience"], list) else []
+            for e in exp:
+                if isinstance(e, dict):
+                    parts.append(
+                        f"Experience: {e.get('role', '')} at {e.get('company', '')} for {e.get('duration', '')}"
+                    )
+        if c.get("education"):
+            edu = c["education"] if isinstance(c["education"], list) else []
+            for e in edu:
+                if isinstance(e, dict):
+                    parts.append(
+                        f"Education: {e.get('degree', '')} from {e.get('school', '')}"
+                    )
+        if c.get("projects"):
+            proj = c["projects"] if isinstance(c["projects"], list) else []
+            for p in proj:
+                if isinstance(p, dict):
+                    parts.append(
+                        f"Project: {p.get('name', '')} - {p.get('description', '')}"
+                    )
+        if c.get("score") is not None:
+            parts.append(f"Match Score: {c['score']}/100")
+        if c.get("vibeCodingScore") is not None:
+            parts.append(f"Vibe Coding Score: {c['vibeCodingScore']}/100")
+        if c.get("categoryScores") and isinstance(c["categoryScores"], dict):
+            scores = ", ".join(f"{k}: {v}" for k, v in c["categoryScores"].items())
+            parts.append(f"Category Scores: {scores}")
+        if c.get("analysisSummary"):
+            parts.append(f"Summary: {c['analysisSummary']}")
+        return "\n".join(parts)
+
+    # ── RAG pipeline ──
+
+    def _retrieve(self, query: str, top_k: int = 5) -> list[dict]:
+        """
+        Embed the query and find the top-K most similar candidates.
+        Candidates without embeddings are skipped.
+        """
+        if not self.candidates_data:
+            return []
+
+        query_embedding = self.get_embedding(self.embed_client, query)
+
+        scored = []
+        for c in self.candidates_data:
+            emb = c.get("embedding")
+            if not emb or not isinstance(emb, list):
+                continue
+            sim = self.cosine_similarity(query_embedding, emb)
+            scored.append((sim, c))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [c for _, c in scored[:top_k]]
+
+    def _build_context(self, relevant_candidates: list[dict]) -> str:
+        """Build a context string from the retrieved candidates."""
+        if not relevant_candidates:
+            return "No candidates found for this job yet."
+
+        parts = []
+        for i, c in enumerate(relevant_candidates, 1):
+            parts.append(f"── Candidate {i} ──\n{self.candidate_to_text(c)}")
+        return "\n\n".join(parts)
 
     def reply(self, message: str, history: list | None = None) -> str:
         """
-        Return a reply to the HR user's message.
-
-        Args:
-            message: The HR user's message text.
-            history: List of previous messages [{"role": "user"|"bot", "text": "..."}].
-
-        Returns:
-            The bot's reply string.
-
-        Replace this method with your own AI logic. For example:
-            - Use OpenAI/Gemini to answer questions about the job's candidates
-            - Implement RAG over candidate CVs
-            - Provide hiring recommendations
+        RAG-powered reply:
+        1. Retrieve top-K candidates relevant to the HR query
+        2. Build context from their data
+        3. Generate a grounded answer via LLM
         """
-        return "hello"
+        # If no candidates have embeddings, fall back to using all candidates as context
+        has_embeddings = any(
+            c.get("embedding") and isinstance(c.get("embedding"), list)
+            for c in self.candidates_data
+        )
+
+        if has_embeddings:
+            relevant = self._retrieve(message, top_k=10)
+        else:
+            # Fallback: use all candidates (no embeddings yet)
+            relevant = self.candidates_data[:20]
+
+        context = self._build_context(relevant)
+        total_count = len(self.candidates_data)
+
+        system_prompt = f"""You are an expert HR assistant for VibeHire. You help hiring managers find the right candidates.
+
+You have access to candidate data for this job. Answer the HR manager's question based ONLY on the candidate data provided below. Be specific — mention candidate names, scores, and relevant details.
+
+JOB DESCRIPTION:
+{self.job_description}
+
+TOTAL CANDIDATES FOR THIS JOB: {total_count}
+
+RELEVANT CANDIDATES:
+{context}
+
+RULES:
+- Only reference candidates from the data above. Never invent candidates.
+- If no candidates match the query, say so clearly.
+- Be concise and actionable. Use bullet points for lists.
+- When comparing candidates, include their scores and key differentiators.
+- If asked about skills/experience, check the actual data fields, not just summaries."""
+
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history if provided
+        if history:
+            for h in history:
+                role = h.get("role", "user")
+                content = h.get("content", "")
+                if role in ("user", "assistant") and content:
+                    messages.append({"role": role, "content": content})
+
+        messages.append({"role": "user", "content": message})
+
+        try:
+            response = self.llm_client.chat.completions.create(
+                model="google/gemini-2.5-flash",
+                messages=messages,
+            )
+            return (
+                response.choices[0].message.content or "I couldn't generate a response."
+            )
+        except Exception as e:
+            return f"Sorry, I encountered an error: {str(e)}"

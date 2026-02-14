@@ -49,6 +49,7 @@ export const candidates = pgTable("candidates", {
   categoryScores: jsonb("category_scores").$type<Record<string, number>>(),
   analysisSummary: text("analysis_summary"),
   rankReason: text("rank_reason"),
+  embedding: jsonb("embedding").$type<number[]>(),
 
   createdAt: timestamp("created_at").defaultNow(),
   userId: varchar("user_id").references(() => users.id),
@@ -115,6 +116,7 @@ export const insertCandidateSchema = createInsertSchema(candidates).omit({
   experience: true,
   education: true,
   projects: true,
+  embedding: true,
 });
 
 export const insertSubscriptionSchema = createInsertSchema(userSubscriptions).omit({

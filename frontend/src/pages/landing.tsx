@@ -45,9 +45,7 @@ export default function LandingPage() {
       {/* Navbar */}
       <header className="px-6 h-20 flex items-center justify-between max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm font-display">VH</span>
-          </div>
+          <img src="/logo.png" alt="VibeHire" className="size-8 rounded-lg object-contain" />
           <span className="font-display font-bold text-xl tracking-tight">VibeHire</span>
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
@@ -414,9 +412,7 @@ export default function LandingPage() {
       <footer className="bg-card border-t border-border/50 py-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center gap-2 mb-4 md:mb-0">
-            <div className="size-6 rounded bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-xs">VH</span>
-            </div>
+            <img src="/logo.png" alt="VibeHire" className="size-6 rounded object-contain" />
             <span className="font-bold font-display">VibeHire</span>
           </div>
           <div className="text-sm text-muted-foreground">

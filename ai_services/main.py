@@ -246,7 +246,7 @@ def interview_history():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    """HR chatbot endpoint. Accepts a message and returns a reply."""
+    """HR chatbot endpoint with RAG. Accepts message + candidates data."""
     try:
         data = request.get_json()
         if not data:
@@ -254,15 +254,47 @@ def chat():
 
         message = (data.get("message") or "").strip()
         job_id = data.get("job_id")
+        job_description = data.get("job_description", "")
         history = data.get("history", [])
+        candidates_data = data.get("candidates", [])
 
         if not message:
             return jsonify({"error": "message is required"}), 400
 
-        bot = ChatBot(job_id=job_id or 0)
+        bot = ChatBot(
+            job_id=job_id or 0,
+            job_description=job_description,
+            candidates_data=candidates_data,
+        )
         reply = bot.reply(message, history)
 
         return jsonify({"reply": reply}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Embedding Endpoint ───
+
+
+@app.route("/embed", methods=["POST"])
+def embed_text():
+    """Generate an embedding vector for candidate text. Used to populate the embedding column."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "JSON body is required"}), 400
+
+        text = (data.get("text") or "").strip()
+        if not text:
+            return jsonify({"error": "text is required"}), 400
+
+        embedding = ChatBot.get_embedding(
+            ChatBot(job_id=0).embed_client,
+            text,
+        )
+
+        return jsonify({"embedding": embedding}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

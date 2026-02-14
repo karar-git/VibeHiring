@@ -1,6 +1,6 @@
 import { candidates, jobs, userSubscriptions, users, applications, interviews, type User } from "../shared/schema.js";
 import { db } from "./db.js";
-import { eq, desc, count, avg, and, sql } from "drizzle-orm";
+import { eq, desc, count, avg, and, or, sql } from "drizzle-orm";
 
 export class DatabaseStorage {
   // Auth
@@ -54,7 +54,9 @@ export class DatabaseStorage {
   }
 
   async deleteJob(id: number) {
-    // Delete all candidates for this job first
+    // Delete in dependency order: interviews -> applications -> candidates -> job
+    await db.delete(interviews).where(eq(interviews.jobId, id));
+    await db.delete(applications).where(eq(applications.jobId, id));
     await db.delete(candidates).where(eq(candidates.jobId, id));
     await db.delete(jobs).where(eq(jobs.id, id));
   }
@@ -114,6 +116,15 @@ export class DatabaseStorage {
     return rows[0]?.count || 0;
   }
 
+  async updateCandidate(id: number, data: Partial<{ embedding: number[] }>) {
+    const [updated] = await db
+      .update(candidates)
+      .set(data)
+      .where(eq(candidates.id, id))
+      .returning();
+    return updated;
+  }
+
   async deleteCandidate(id: number) {
     await db.delete(candidates).where(eq(candidates.id, id));
   }
@@ -149,6 +160,21 @@ export class DatabaseStorage {
   }
 
   // Applications (public job applications)
+  async hasExistingApplication(jobId: number, email: string, userId: string | null): Promise<boolean> {
+    const conditions = [
+      and(eq(applications.jobId, jobId), eq(applications.applicantEmail, email)),
+    ];
+    if (userId) {
+      conditions.push(and(eq(applications.jobId, jobId), eq(applications.userId, userId)));
+    }
+    const rows = await db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(or(...conditions))
+      .limit(1);
+    return rows.length > 0;
+  }
+
   async createApplication(application: any) {
     const [newApp] = await db.insert(applications).values(application).returning();
     return newApp;

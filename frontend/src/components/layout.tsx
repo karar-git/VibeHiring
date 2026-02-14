@@ -48,9 +48,7 @@ export function Layout({ children }: LayoutProps) {
   const NavContent = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-6 py-8">
-        <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/25">
-          <span className="text-white font-bold text-xl font-display">VH</span>
-        </div>
+        <img src="/logo.png" alt="VibeHire" className="size-10 rounded-xl object-contain" />
         <div>
           <h1 className="font-display font-bold text-lg tracking-tight">VibeHire</h1>
           <p className="text-xs text-muted-foreground font-medium">
@@ -131,9 +129,7 @@ export function Layout({ children }: LayoutProps) {
       <main className="flex-1 lg:ml-72 min-h-screen">
         <header className="h-16 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-20 flex items-center px-6 lg:hidden justify-between">
           <div className="flex items-center gap-2">
-             <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm font-display">VH</span>
-            </div>
+             <img src="/logo.png" alt="VibeHire" className="size-8 rounded-lg object-contain" />
             <span className="font-display font-bold text-lg">VibeHire</span>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
