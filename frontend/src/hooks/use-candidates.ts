@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import type { Candidate } from "@/types";
+import type { Candidate, RecommendedCandidate } from "@/types";
 
 export function useCandidatesByJob(jobId: number) {
   return useQuery<Candidate[]>({
@@ -73,6 +73,19 @@ export interface CsvImportResult {
   imported: number;
   failed: number;
   errors: string[];
+}
+
+export function useRecommendations(jobId: number) {
+  return useQuery<RecommendedCandidate[]>({
+    queryKey: ["/api/jobs", jobId, "recommendations"],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/jobs/${jobId}/recommendations`);
+      if (!res.ok) throw new Error("Failed to fetch recommendations");
+      return res.json();
+    },
+    enabled: jobId > 0,
+    staleTime: 5 * 60 * 1000, // cache for 5 min since embedding calls are expensive
+  });
 }
 
 export function useImportCsv(jobId: number) {

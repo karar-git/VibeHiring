@@ -126,6 +126,20 @@ function buildCandidateEmbeddingText(candidate: {
   return parts.join("\n");
 }
 
+// Cosine similarity between two vectors (for RAG recommendations)
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  normA = Math.sqrt(normA);
+  normB = Math.sqrt(normB);
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (normA * normB);
+}
+
 export function registerRoutes(app: Express): void {
   // ─── Auth Routes ───
   app.post("/api/auth/register", handleRegister);
@@ -994,6 +1008,7 @@ export function registerRoutes(app: Express): void {
       linkedinUrl: user.linkedinUrl,
       githubUrl: user.githubUrl,
       portfolioUrl: user.portfolioUrl,
+      resumeUrl: user.resumeUrl,
       workExperience: user.workExperience,
       education: user.education,
       skills: user.skills,
@@ -1029,11 +1044,107 @@ export function registerRoutes(app: Express): void {
       linkedinUrl: updated.linkedinUrl,
       githubUrl: updated.githubUrl,
       portfolioUrl: updated.portfolioUrl,
+      resumeUrl: updated.resumeUrl,
       workExperience: updated.workExperience,
       education: updated.education,
       skills: updated.skills,
       createdAt: updated.createdAt,
     });
+  });
+
+  // ─── Profile CV Upload ───
+  app.post("/api/profile/cv", requireAuth, upload.single("resumeFile"), async (req, res) => {
+    const userId = req.userId!;
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: "Resume file is required" });
+
+    const resumeUrl = `/uploads/${file.filename}`;
+    const updated = await storage.updateUser(userId, { resumeUrl });
+
+    res.json({
+      id: updated.id,
+      email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      role: updated.role,
+      profileImageUrl: updated.profileImageUrl,
+      headline: updated.headline,
+      bio: updated.bio,
+      location: updated.location,
+      phone: updated.phone,
+      linkedinUrl: updated.linkedinUrl,
+      githubUrl: updated.githubUrl,
+      portfolioUrl: updated.portfolioUrl,
+      resumeUrl: updated.resumeUrl,
+      workExperience: updated.workExperience,
+      education: updated.education,
+      skills: updated.skills,
+      createdAt: updated.createdAt,
+    });
+  });
+
+  // ─── Job Recommendations (RAG-based top 3 candidates) ───
+  app.get("/api/jobs/:jobId/recommendations", requireAuth, async (req, res) => {
+    const jobId = Number(req.params.jobId);
+    const job = await storage.getJob(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userId !== req.userId) return res.status(403).json({ message: "Forbidden" });
+
+    try {
+      const jobCandidates = await storage.listCandidatesByJob(jobId);
+      if (jobCandidates.length === 0) {
+        return res.json([]);
+      }
+
+      // Get the job description embedding
+      const embedResp = await fetch(`${AI_SERVICE_URL}/embed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: job.description }),
+      });
+
+      if (!embedResp.ok) {
+        console.error(`Embedding service returned ${embedResp.status} for job recommendation`);
+        // Fallback: return top 3 by score
+        const top3 = jobCandidates.slice(0, 3);
+        return res.json(top3.map((c) => ({ ...c, similarity: null })));
+      }
+
+      const embedData = (await embedResp.json()) as any;
+      const jobEmbedding: number[] = embedData.embedding;
+
+      if (!jobEmbedding || !Array.isArray(jobEmbedding)) {
+        const top3 = jobCandidates.slice(0, 3);
+        return res.json(top3.map((c) => ({ ...c, similarity: null })));
+      }
+
+      // Compute cosine similarity for candidates with embeddings
+      const scored = jobCandidates
+        .filter((c) => c.embedding && Array.isArray(c.embedding) && c.embedding.length > 0)
+        .map((c) => ({
+          ...c,
+          similarity: cosineSimilarity(jobEmbedding, c.embedding!),
+        }))
+        .sort((a, b) => b.similarity - a.similarity);
+
+      // If not enough candidates with embeddings, supplement with score-sorted ones
+      const withEmbeddings = new Set(scored.map((c) => c.id));
+      const withoutEmbeddings = jobCandidates
+        .filter((c) => !withEmbeddings.has(c.id))
+        .map((c) => ({ ...c, similarity: null as number | null }));
+
+      const combined = [...scored, ...withoutEmbeddings];
+      const top3 = combined.slice(0, 3);
+
+      // Strip embedding from response to keep it small
+      const result = top3.map(({ embedding, ...rest }) => rest);
+      res.json(result);
+    } catch (e: any) {
+      console.error("Error computing recommendations:", e);
+      // Fallback: return top 3 by score
+      const top3 = jobCandidates.slice(0, 3);
+      res.json(top3.map(({ embedding, ...rest }) => ({ ...rest, similarity: null })));
+    }
   });
 
   // ─── Interviews API ───

@@ -36,6 +36,7 @@ export class DatabaseStorage {
     linkedinUrl: string | null;
     githubUrl: string | null;
     portfolioUrl: string | null;
+    resumeUrl: string | null;
     workExperience: any[] | null;
     education: any[] | null;
     skills: string[] | null;

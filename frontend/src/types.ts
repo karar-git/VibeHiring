@@ -14,6 +14,7 @@ export interface User {
   linkedinUrl: string | null;
   githubUrl: string | null;
   portfolioUrl: string | null;
+  resumeUrl: string | null;
   workExperience: WorkExperience[] | null;
   education: Education[] | null;
   skills: string[] | null;
@@ -133,4 +134,8 @@ export interface Interview {
   completedAt: string | null;
   createdAt: string | null;
   userId: string | null;
+}
+
+export interface RecommendedCandidate extends Candidate {
+  similarity: number | null;
 }

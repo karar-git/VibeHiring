@@ -1,5 +1,5 @@
 import { useJob, useDeleteJob, useUpdateJob } from "@/hooks/use-jobs";
-import { useCandidatesByJob, useDeleteCandidate } from "@/hooks/use-candidates";
+import { useCandidatesByJob, useDeleteCandidate, useRecommendations } from "@/hooks/use-candidates";
 import { useApplicationsByJob, useUpdateApplicationStatus, useDeleteApplication } from "@/hooks/use-applications";
 import { useInterviewsByJob, useCreateInterview } from "@/hooks/use-interviews";
 import { ChatWidget } from "@/components/chat-widget";
@@ -32,6 +32,7 @@ import {
   Eye,
   Star,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,6 +47,7 @@ export default function JobDetailPage() {
   const { data: candidates, isLoading: candidatesLoading } = useCandidatesByJob(id);
   const { data: applications, isLoading: appsLoading } = useApplicationsByJob(id);
   const { data: interviews, isLoading: interviewsLoading } = useInterviewsByJob(id);
+  const { data: recommendations, isLoading: recsLoading } = useRecommendations(id);
   const { mutate: deleteJob, isPending: isDeleting } = useDeleteJob();
   const { mutate: deleteCandidate } = useDeleteCandidate(id);
   const { mutate: updateJob } = useUpdateJob();
@@ -296,6 +298,96 @@ export default function JobDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI Recommendations */}
+        {(recsLoading || (recommendations && recommendations.length > 0)) && (
+          <Card className="border-primary/20 shadow-sm bg-gradient-to-r from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-display flex items-center gap-2 text-base">
+                <Sparkles className="size-4 text-primary" />
+                AI-Recommended Candidates
+                <span className="text-xs font-normal text-muted-foreground ml-1">
+                  Top matches based on job description similarity
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recsLoading ? (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Analyzing candidates...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {recommendations!.map((rec, i) => (
+                    <motion.div
+                      key={rec.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                    >
+                      <Link href={`/candidates/${rec.id}`}>
+                        <div className="bg-card border border-border/50 rounded-xl p-4 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                                #{i + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="font-semibold text-sm truncate">{rec.name}</h4>
+                                {rec.email && (
+                                  <p className="text-xs text-muted-foreground truncate">{rec.email}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-3">
+                            {rec.similarity != null && (
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                                {Math.round(rec.similarity * 100)}% match
+                              </Badge>
+                            )}
+                            {rec.score != null && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${
+                                  rec.score >= 80
+                                    ? "bg-green-100 text-green-700 border-green-200"
+                                    : rec.score >= 60
+                                    ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                    : "bg-gray-100 text-gray-600 border-gray-200"
+                                }`}
+                              >
+                                Score: {rec.score}
+                              </Badge>
+                            )}
+                          </div>
+                          {rec.skills && rec.skills.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {rec.skills.slice(0, 3).map((skill) => (
+                                <span
+                                  key={skill}
+                                  className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md text-muted-foreground"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                              {rec.skills.length > 3 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  +{rec.skills.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs: Candidates | Applications | Interviews */}
         <div>

@@ -140,6 +140,7 @@ export async function handleGetMe(req: Request, res: Response) {
       linkedinUrl: user.linkedinUrl,
       githubUrl: user.githubUrl,
       portfolioUrl: user.portfolioUrl,
+      resumeUrl: user.resumeUrl,
       workExperience: user.workExperience,
       education: user.education,
       skills: user.skills,

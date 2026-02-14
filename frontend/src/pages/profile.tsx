@@ -29,6 +29,10 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  FileText,
+  Upload,
+  Download,
+  Eye,
 } from "lucide-react";
 import type { User, WorkExperience, Education } from "@/types";
 
@@ -128,6 +132,36 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     saveMutation.mutate(form);
+  };
+
+  const cvUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("resumeFile", file);
+      const res = await apiFetch("/api/profile/cv", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Failed to upload CV");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/profile"], data);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      toast({ title: "CV uploaded", description: "Your resume has been saved to your profile." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleCvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      cvUploadMutation.mutate(file);
+    }
+    // Reset input so the same file can be re-uploaded
+    e.target.value = "";
   };
 
   const handleCancel = () => {
@@ -430,6 +464,92 @@ export default function ProfilePage() {
                   {!form.linkedinUrl && !form.githubUrl && !form.portfolioUrl && (
                     <p className="text-sm text-muted-foreground">No links added yet.</p>
                   )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Resume / CV */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.07 }}
+        >
+          <Card className="border-border/60">
+            <CardHeader>
+              <CardTitle className="font-display text-base flex items-center gap-2">
+                <FileText className="size-4 text-muted-foreground" />
+                Resume / CV
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profile?.resumeUrl ? (
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-lg bg-primary/10">
+                      <FileText className="size-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Resume uploaded</p>
+                      <p className="text-xs text-muted-foreground">
+                        Click to view or replace your current resume.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer">
+                        <Eye className="size-4 mr-1" />
+                        View
+                      </a>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="relative"
+                      disabled={cvUploadMutation.isPending}
+                    >
+                      {cvUploadMutation.isPending ? (
+                        <Loader2 className="size-4 animate-spin mr-1" />
+                      ) : (
+                        <Upload className="size-4 mr-1" />
+                      )}
+                      Replace
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleCvUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl">
+                  <FileText className="mx-auto size-8 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground mt-2">No resume uploaded yet.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload your CV to make your profile complete.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4 gap-2 relative"
+                    disabled={cvUploadMutation.isPending}
+                  >
+                    {cvUploadMutation.isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Upload className="size-4" />
+                    )}
+                    Upload Resume
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleCvUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </Button>
                 </div>
               )}
             </CardContent>

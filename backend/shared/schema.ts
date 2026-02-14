@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   linkedinUrl: varchar("linkedin_url"),
   githubUrl: varchar("github_url"),
   portfolioUrl: varchar("portfolio_url"),
+  resumeUrl: varchar("resume_url"),
   workExperience: jsonb("work_experience").$type<any[]>(),
   education: jsonb("education").$type<any[]>(),
   skills: jsonb("skills").$type<string[]>(),
